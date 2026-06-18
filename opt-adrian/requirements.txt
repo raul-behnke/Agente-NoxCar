@@ -1,0 +1,13 @@
+agno
+openai
+python-dotenv
+fastapi
+uvicorn
+gunicorn
+httpx
+pydantic
+python-dateutil
+pyyaml
+structlog
+prometheus-client
+pytest

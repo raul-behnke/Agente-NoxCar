@@ -1,0 +1,22 @@
+# FAQ Nox Car (PRD §7.2). Static reference content -> Knowledge Base (vector
+# search), NOT tool calls and NOT hardcoded in the prompt.
+# Edit here and re-run knowledge/ingest.py to update the vector store.
+
+faq:
+  - pergunta: Qual o horário de atendimento?
+    resposta: Segunda a sexta das 8h às 18h, sábado das 9h às 13h.
+
+  - pergunta: Onde fica a loja / qual o endereço?
+    resposta: Av. Exemplo, 1000 - Centro. Estacionamento próprio para clientes.
+
+  - pergunta: Vocês aceitam troca?
+    resposta: Sim, aceitamos seu usado como parte do pagamento, avaliado na loja.
+
+  - pergunta: Os veículos têm garantia?
+    resposta: Todos os veículos passam por revisão e possuem garantia conforme política da loja.
+
+  - pergunta: Quais documentos preciso para comprar?
+    resposta: Documento com foto, CPF e comprovante de residência. Para financiamento, o consultor orienta sobre o restante.
+
+  - pergunta: Como funciona o financiamento?
+    resposta: Trabalhamos com financiamento via parceiros. O consultor apresenta as condições após entender entrada e perfil.
