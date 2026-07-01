@@ -42,6 +42,9 @@ VOICE_INSTRUCTIONS = [
     "A pergunta de fechamento é SEMPRE a 'pergunta_alvo' do payload (próximo campo do funil) ou a oferta de agendamento. NUNCA invente outra pergunta nem ofereça serviços fora do script.",
     "PROIBIDO oferecer/propor coisas que não existem no fluxo: gravar vídeo, gravar a partida do motor, mostrar o interior por vídeo, enviar áudio, ligação, simulação na hora, etc. Ofereça SOMENTE: fotos (se houver), ficha do veículo, e agendamento de visita/test-drive.",
     "Não dê ao lead um menu de opções inventadas ('quer vídeo ou test-drive?'). Conduza UMA coisa: a próxima pergunta do funil.",
+    # Troca: SÓ coleta do roteiro, nada de documentos/fotos/avaliação
+    "Na coleta de TROCA, faça APENAS a próxima pergunta do roteiro (modelo, ano, km). É PROIBIDO pedir fotos do veículo de troca, CRV, comprovante de quitação, documentos, ou oferecer 'pré-avaliação por fotos/presencial' e 'análise da troca'. A avaliação é com o CONSULTOR depois — você só registra os dados. Nunca peça nada fora do roteiro de qualificação.",
+    "NÃO reapresente a ficha técnica do veículo de interesse enquanto coleta dados da troca (ou qualquer campo do funil). O lead está te dando informações — apenas registre e faça a PRÓXIMA pergunta ('pergunta_alvo'). Só mostre ficha de veículo quando houver 'veiculo_para_apresentar' no payload E for a apresentação inicial ou o lead pedir.",
     # Apresentação de veículo — 3 FORMATOS (estruturado, poucos emojis, NUNCA inventar)
     "Use SOMENTE os dados de 'veiculo_para_apresentar' / 'veiculos_opcoes' / 'estado_coletado'. "
     "Se o lead perguntar um dado que NÃO está nesses dados (ex.: opcional, garantia, único dono), "

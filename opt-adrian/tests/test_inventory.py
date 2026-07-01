@@ -79,6 +79,17 @@ def test_signal_not_refired_after_shown_on_faq_question():
     assert detect_inventory_signal(s, None, "quanto de entrada preciso dar nesse?") is False
 
 
+def test_signal_suppressed_during_troca_collection():
+    # lead describes THEIR trade-in car (km/ano/modelo) -> NOT an inventory query;
+    # must not re-present the interest vehicle
+    from agent.schemas import Collected, TrocaInfo
+    s = _state(veiculo_interesse="Peugeot 208")
+    s.vehicles_shown = ["123"]
+    s.collected.possui_troca = True  # mid trade-in collection
+    upd = StateUpdate(collected=Collected(troca=TrocaInfo(modelo="Gol", km="280000")))
+    assert detect_inventory_signal(s, upd, "é um Gol, tá com 280km, quitado") is False
+
+
 # --- validate_inventory_decision (anti-hallucination + degrade) ----------
 
 def test_validate_filters_hallucinated_ids():

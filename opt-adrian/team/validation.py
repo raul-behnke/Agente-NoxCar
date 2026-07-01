@@ -32,6 +32,19 @@ def detect_inventory_signal(
     # that never matched and made the ficha re-fire every turn.)
     if c.veiculo_interesse and not state.vehicles_shown:
         return True
+    # TRADE-IN collection: the lead is describing THEIR car (modelo/ano/km/quitado).
+    # Those vehicle keywords are NOT an inventory query — don't re-present the
+    # interest vehicle. Explicit asks ('ver outros', 'manda foto') were already
+    # handled above via update.intent, so this only kills the fuzzy keyword match.
+    collecting_troca = (
+        update is not None and (
+            update.collected.possui_troca is True
+            or any(getattr(update.collected.troca, s) is not None
+                   for s in ("modelo", "ano", "km", "quitado"))
+        )
+    ) or (c.possui_troca is True and not c.troca.is_complete())
+    if collecting_troca:
+        return False
     # explicit vehicle/spec keyword in this message (attribute/options/photos)
     msg = (last_message or "").lower()
     if any(kw in msg for kw in _VEHICLE_KEYWORDS):
