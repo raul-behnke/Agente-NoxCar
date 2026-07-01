@@ -35,6 +35,12 @@ class Settings:
     # History turns replayed into context.
     num_history_runs: int = int(os.getenv("ADRIAN_HISTORY_RUNS", "8"))
 
+    # Timeouts (s) para evitar turno travado em silêncio. Um hang no CRM ou na
+    # chamada LLM vira erro visível -> _safe_escalate, em vez de sumir.
+    crm_timeout_sec: float = float(os.getenv("ADRIAN_CRM_TIMEOUT_SEC", "20"))
+    llm_timeout_sec: float = float(os.getenv("ADRIAN_LLM_TIMEOUT_SEC", "60"))
+    turn_timeout_sec: float = float(os.getenv("ADRIAN_TURN_TIMEOUT_SEC", "150"))
+
     # Burst debounce (WhatsApp): quando o lead manda várias mensagens seguidas,
     # espera esta janela (s) e processa só a ÚLTIMA — evita turnos preemptados e
     # perda da 1ª mensagem (ex.: o nome). 0 desliga. A history do CRM já terá o

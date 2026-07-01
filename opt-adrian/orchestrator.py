@@ -239,6 +239,8 @@ async def run_turn(ev: InboundEvent) -> Result:
     # 3-5. state + terminal guard
     is_new = not session_exists(ev.contact_id)
     state = load_or_new(ev.contact_id, ev.conversation_id)
+    log.info("turn_start", contact_id=ev.contact_id, message_id=ev.message_id,
+             msg=(ev.message or "")[:80])
     if state.terminal_reason:
         return Result("ignored", f"sessão encerrada ({state.terminal_reason})")
 
@@ -258,9 +260,13 @@ async def run_turn(ev: InboundEvent) -> Result:
 
     # 6. history = source of truth; failure -> handoff_erro
     try:
-        history = crm.get_history(ev.contact_id)
-    except Exception as exc:  # noqa: BLE001
+        history = await asyncio.wait_for(
+            asyncio.to_thread(crm.get_history, ev.contact_id),
+            timeout=settings.crm_timeout_sec,
+        )
+    except Exception as exc:  # noqa: BLE001 (inclui TimeoutError)
         return _safe_escalate(state, ev, f"falha ao ler histórico: {exc}")
+    log.info("history_loaded", contact_id=ev.contact_id, turns=len(history))
 
     # continuation? if the store already replied before, don't re-greet
     if not state.saudacao_feita and any(
@@ -278,8 +284,11 @@ async def run_turn(ev: InboundEvent) -> Result:
     # (WORKER TIMEOUT) and the reply is never sent. Offload to a thread so the
     # loop stays responsive and preemption cancel works at await points.
     try:
-        update = await asyncio.to_thread(_extract, history, state, ev.message)
-    except Exception as exc:  # noqa: BLE001
+        update = await asyncio.wait_for(
+            asyncio.to_thread(_extract, history, state, ev.message),
+            timeout=settings.llm_timeout_sec,
+        )
+    except Exception as exc:  # noqa: BLE001 (inclui TimeoutError)
         return _safe_escalate(state, ev, f"falha na extração: {exc}")
 
     # 9. immediate escalation exceptions (grill Q4 — only 3)
@@ -429,9 +438,15 @@ async def process_turn(ev: InboundEvent) -> Result:
     task = asyncio.ensure_future(run_turn(ev))
     _TASKS[ev.contact_id] = task
     try:
-        result = await task
+        # backstop: um turno que trave (CRM/LLM sem resposta) não pode ficar
+        # pendurado em silêncio — estoura timeout e vira erro visível.
+        result = await asyncio.wait_for(asyncio.shield(task), timeout=settings.turn_timeout_sec)
         TURNS_TOTAL.labels(result.action).inc()
         return result
+    except asyncio.TimeoutError:
+        log.error("turn_timeout", contact_id=ev.contact_id, message_id=ev.message_id)
+        task.cancel()
+        return Result("failed", "turno excedeu o tempo limite")
     except asyncio.CancelledError:
         # a newer message for this contact preempted this turn — expected
         log.info("turn_preempted", contact_id=ev.contact_id, message_id=ev.message_id)
