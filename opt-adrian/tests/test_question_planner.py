@@ -8,7 +8,7 @@ from agent.schemas import (
     StateUpdate,
     TrocaInfo,
 )
-from agent.question_planner import QuestionIntent, plan_next_question
+from agent.question_planner import CANONICAL_QUESTIONS, QuestionIntent, plan_next_question
 
 
 def _state(**collected) -> SessionState:
@@ -24,7 +24,7 @@ def test_empty_asks_name_first():
     q = plan_next_question(_state())
     assert q.intent == QuestionIntent.funil
     assert q.field == "nome"
-    assert q.canonical_text == "Como posso te chamar?"
+    assert q.canonical_text == CANONICAL_QUESTIONS["nome"]
 
 
 def test_after_name_asks_vehicle():

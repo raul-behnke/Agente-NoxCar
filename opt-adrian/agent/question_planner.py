@@ -41,23 +41,23 @@ class NextQuestion(BaseModel):
 
 
 CANONICAL_QUESTIONS: dict[str, str] = {
-    "nome": "Como posso te chamar?",
-    "veiculo_interesse": "Qual veículo você está procurando?",
-    "veiculo_interesse_confirmado": "É esse veículo mesmo que você quer ver?",
-    "possui_troca": "Você tem algum veículo para dar na troca?",
-    "possui_entrada": "Você pretende dar algum valor de entrada?",
+    "nome": "Pra deixar seu atendimento certinho, como posso te chamar?",
+    "veiculo_interesse": "Me conta, qual veículo você está procurando?",
+    "veiculo_interesse_confirmado": "É esse mesmo que te interessou?",
+    "possui_troca": "Você tem algum veículo hoje pra entrar como troca na negociação?",
+    "possui_entrada": "E de entrada, você pensa em dar algum valor?",
     "metodo_negociacao": (
-        "Como você pretende fazer a negociação? Financiamento, à vista ou consórcio?"
+        "Como fica melhor pra você fechar: financiamento, à vista ou consórcio?"
     ),
-    "faixa_parcela": "Qual faixa de parcela cabe no seu orçamento?",
-    "valor_entrada": "Qual valor você tem de entrada?",
+    "faixa_parcela": "Pra eu já te direcionar certo, qual faixa de parcela cabe no seu mês?",
+    "valor_entrada": "Quanto você pensa em dar de entrada?",
     "consorcio_contemplado": "Sua carta de consórcio já está contemplada?",
-    "cidade": "De qual cidade você fala?",
-    "troca.modelo": "Qual o modelo do veículo que você quer dar na troca?",
-    "troca.ano": "Qual o ano desse veículo de troca?",
-    "troca.km": "Quantos km ele tem, mais ou menos?",
-    "troca.quitado": "Esse veículo de troca já está quitado?",
-    "agendamento": "Quer agendar uma visita para ver o veículo de perto?",
+    "cidade": "E você é aqui da região ou vem de outra cidade pra visitar a loja?",
+    "troca.modelo": "Qual o modelo do seu veículo atual?",
+    "troca.ano": "E ele é de que ano?",
+    "troca.km": "Tem ideia da quilometragem, mais ou menos?",
+    "troca.quitado": "Ele já está quitado ou ainda tem parcela?",
+    "agendamento": "Quer que eu já deixe uma visita reservada pra você ver de perto?",
 }
 
 _TROCA_SUBFIELDS = ("modelo", "ano", "km", "quitado")
