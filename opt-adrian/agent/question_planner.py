@@ -129,11 +129,21 @@ def _funnel_next(
     c = state.collected
     skipped = set(state.skipped_fields)
 
-    # 4. vehicle identified but not confirmed -> present/confirm (foco)
+    # 4. vehicle identified but not confirmed -> present/confirm (foco).
+    #    Se o lead já ENGAJOU a negociação (troca/entrada/método/nome), o interesse
+    #    está implícito — não fique re-perguntando "é esse mesmo?".
+    ja_engajou = (
+        c.nome
+        or c.possui_troca is not None
+        or c.possui_entrada is not None
+        or c.metodo_negociacao is not None
+        or c.troca.modelo is not None
+    )
     if (
         c.veiculo_interesse
         and c.veiculo_interesse_confirmado is not True
         and "veiculo_interesse_confirmado" not in skipped
+        and not ja_engajou
     ):
         return _make(state, "veiculo_interesse_confirmado", QuestionIntent.foco)
 

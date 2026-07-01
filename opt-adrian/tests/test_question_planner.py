@@ -33,9 +33,16 @@ def test_after_name_asks_vehicle():
 
 
 def test_vehicle_set_unconfirmed_goes_foco():
-    q = plan_next_question(_state(nome="J", veiculo_interesse="Compass"))
+    # veículo identificado e lead AINDA não engajou (sem nome/troca/etc.) -> confirma
+    q = plan_next_question(_state(veiculo_interesse="Compass"))
     assert q.intent == QuestionIntent.foco
     assert q.field == "veiculo_interesse_confirmado"
+
+
+def test_engaged_lead_skips_confirm():
+    # lead já engajou negociação (deu nome) -> não re-pergunta "é esse mesmo?"
+    q = plan_next_question(_state(nome="J", veiculo_interesse="Compass"))
+    assert q.field != "veiculo_interesse_confirmado"
 
 
 def test_confirmed_asks_possui_troca():

@@ -24,7 +24,11 @@ mensagem para o lead.
 Extraia, quando presentes de forma clara, os campos do funil:
 - nome
 - veiculo_interesse (modelo/carro citado)
-- veiculo_interesse_confirmado (true só se o lead confirmou que é esse o veículo)
+- veiculo_interesse_confirmado: true quando o lead confirma OU demonstra interesse
+  CLARO no veículo — "sim", "é esse", "gostei", "quero esse", ou quando faz
+  perguntas de NEGOCIAÇÃO sobre ele (troca, preço, financiamento, parcela,
+  "quanto fica"). Interesse em negociar o veículo JÁ confirma o interesse; não
+  fique re-perguntando "é esse mesmo?".
 - metodo_negociacao: troca | financiamento | consorcio | avista | financiamento_100 | combinacao
 - possui_troca (true/false conforme o lead disser; null se não disse)
 - troca: modelo, ano, km, quitado (true/false), restante (valor aproximado)
