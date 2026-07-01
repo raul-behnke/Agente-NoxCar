@@ -72,8 +72,16 @@ def extract_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if isinstance(msg, dict):
         msg = msg.get("body") or msg.get("message") or ""
     text = (msg or payload.get("body") or payload.get("Mensagem Completa") or "").strip()
+    msg_obj = payload.get("message") if isinstance(payload.get("message"), dict) else {}
+    message_id = (
+        payload.get("message_id")
+        or payload.get("messageId")
+        or payload.get("id")
+        or msg_obj.get("id")
+        or msg_obj.get("messageId")
+    )
     return {
-        "message_id": payload.get("message_id") or payload.get("messageId"),
+        "message_id": message_id,
         "contact_id": contact_id,
         # CRM ops are contact-centric; conversation is resolved from the contact.
         "conversation_id": payload.get("conversation_id")

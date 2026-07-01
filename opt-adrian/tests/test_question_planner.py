@@ -124,6 +124,33 @@ def test_after_hours_lead_request_still_schedules():
     assert q.intent == QuestionIntent.agendamento
 
 
+def test_follow_troca_thread_over_nome():
+    # lead ainda sem nome, mas ESTE turno revelou troca -> segue troca (modelo),
+    # não volta pra pergunta do nome
+    s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True,
+               possui_troca=True)
+    s.collected.troca.ano = "2001"
+    upd = StateUpdate(collected=Collected(possui_troca=True, troca=TrocaInfo(ano="2001")))
+    q = plan_next_question(s, upd)
+    assert q.field == "troca.modelo"
+
+
+def test_follow_entrada_thread():
+    s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True,
+               possui_entrada=True)
+    upd = StateUpdate(collected=Collected(possui_entrada=True))
+    q = plan_next_question(s, upd)
+    assert q.field == "valor_entrada"
+
+
+def test_no_thread_signal_keeps_normal_order():
+    # sem sinal de troca no update, ordem normal (nome primeiro)
+    s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True,
+               possui_troca=True)
+    q = plan_next_question(s, StateUpdate())
+    assert q.field == "nome"
+
+
 def test_premature_scheduling_intent_wins():
     # incomplete funnel but lead wants to schedule (grill Q4: allowed)
     s = _state(nome="J")

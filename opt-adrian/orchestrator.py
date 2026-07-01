@@ -434,6 +434,7 @@ async def process_turn(ev: InboundEvent) -> Result:
         return result
     except asyncio.CancelledError:
         # a newer message for this contact preempted this turn — expected
+        log.info("turn_preempted", contact_id=ev.contact_id, message_id=ev.message_id)
         return Result("preempted", "turno substituído por mensagem mais recente")
     except Exception as exc:  # noqa: BLE001 - never surface a 500 to the CRM
         log.error("turn_unhandled_error", contact_id=ev.contact_id, error=str(exc))

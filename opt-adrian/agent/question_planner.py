@@ -117,6 +117,30 @@ def plan_next_question(
     ):
         return _make(state, "veiculo_interesse_confirmado", QuestionIntent.foco)
 
+    # 4b. FOLLOW THE LEAD'S THREAD: se a mensagem deste turno abriu um assunto do
+    # funil (troca / entrada), continue ESSE fluxo em vez de voltar para campos
+    # anteriores (ex.: nome). Um vendedor experiente segue o que o lead trouxe —
+    # não ignora a troca pra perguntar o nome primeiro.
+    if update is not None:
+        uc = update.collected
+        # troca: lead sinalizou que tem veículo na troca (gate ou algum subcampo)
+        troca_tocada = uc.possui_troca is True or any(
+            getattr(uc.troca, s) is not None for s in _TROCA_SUBFIELDS
+        )
+        if troca_tocada and c.possui_troca is True and not c.troca.is_complete():
+            sub = _next_troca_subfield(c.troca, skipped)
+            if sub is not None:
+                return _make(state, sub, QuestionIntent.funil)
+        # entrada: lead falou de entrada -> puxe o valor antes de recuar
+        entrada_tocada = uc.possui_entrada is True or bool(uc.valor_entrada)
+        if (
+            entrada_tocada
+            and c.possui_entrada is True
+            and not (c.valor_entrada or c.valor_financiado)
+            and "valor_entrada" not in skipped
+        ):
+            return _make(state, "valor_entrada", QuestionIntent.funil)
+
     # 5. funnel: first missing field not given up on, drilling into troca subfields
     for field in compute_missing(c):
         if field == "troca":
