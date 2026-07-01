@@ -61,6 +61,12 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_contact ON events(contact_id);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, created_at);
+CREATE TABLE IF NOT EXISTS burst_tokens (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,  -- globally monotonic arrival token
+    contact_id TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_burst_contact ON burst_tokens(contact_id, id);
 """
 
 # Idempotent column additions. SQLite has no "ADD COLUMN IF NOT EXISTS", so we

@@ -8,12 +8,12 @@ aggregation -> orchestrator.process_turn with contactId preemption).
 from __future__ import annotations
 
 import asyncio
-import itertools
 
 from fastapi import APIRouter, Request
 
 from audio.whisper import transcribe_many
 from config.settings import settings
+from db.sessions import is_latest_inbound_arrival, mark_inbound_arrival
 from endpoints.ingest import aggregate_burst, extract_payload, should_ignore
 from ghl.client import crm
 from obs import bind_ids, clear_ids, log
@@ -22,24 +22,18 @@ from security import require_secret
 
 router = APIRouter()
 
-# Burst debounce state (per worker). Each inbound gets a monotonic token; after a
-# short wait, only the LATEST token for a contact proceeds — the earlier ones bail
-# because a newer message superseded them. The winner reads the full burst from
-# CRM history (aggregate_burst), so nothing the lead said is lost.
-_burst_seq = itertools.count(1)
-_burst_latest: dict[str, int] = {}
-
 
 async def _debounced_out(contact_id: str) -> bool:
-    """True if this arrival was superseded by a newer message for the contact."""
-    token = next(_burst_seq)
-    _burst_latest[contact_id] = token
+    """True if this arrival was superseded by a newer message for the contact.
+
+    The arrival token is stored in SQLite (shared across gunicorn workers), so the
+    debounce coordinates even when a burst is spread over worker processes — only
+    the single globally-latest message runs the turn."""
+    token = await asyncio.to_thread(mark_inbound_arrival, contact_id)
     if settings.burst_debounce_sec > 0:
         await asyncio.sleep(settings.burst_debounce_sec)
-    if _burst_latest.get(contact_id) != token:
-        return True
-    _burst_latest.pop(contact_id, None)
-    return False
+    latest = await asyncio.to_thread(is_latest_inbound_arrival, contact_id, token)
+    return not latest
 
 
 async def _process_inbound(data: dict) -> None:

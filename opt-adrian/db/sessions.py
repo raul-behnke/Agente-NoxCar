@@ -11,8 +11,29 @@ from db.engine import connect, init_db
 __all__ = [
     "init_db", "load_or_new", "save", "session_exists",
     "already_processed", "side_effect_done", "bump_attempt",
-    "stale_active_sessions",
+    "stale_active_sessions", "mark_inbound_arrival", "is_latest_inbound_arrival",
 ]
+
+
+def mark_inbound_arrival(contact_id: str) -> int:
+    """Register an inbound arrival; return a globally monotonic token.
+
+    Shared across gunicorn workers (SQLite) so burst debounce coordinates even
+    when the burst is load-balanced across worker processes."""
+    with connect() as con:
+        cur = con.execute(
+            "INSERT INTO burst_tokens(contact_id) VALUES (?)", (contact_id,)
+        )
+        return int(cur.lastrowid)
+
+
+def is_latest_inbound_arrival(contact_id: str, token: int) -> bool:
+    """True if `token` is the newest arrival for the contact (no later message)."""
+    with connect() as con:
+        row = con.execute(
+            "SELECT MAX(id) AS m FROM burst_tokens WHERE contact_id = ?", (contact_id,)
+        ).fetchone()
+    return bool(row) and row["m"] == token
 
 
 def session_exists(contact_id: str) -> bool:
