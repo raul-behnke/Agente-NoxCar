@@ -95,7 +95,7 @@ def build_inventory_expert(inventory: list[dict]) -> Agent:
     snapshot = format_inventory_snapshot(inventory)
     return Agent(
         name="EstoqueExpert",
-        model=OpenAIChat(id=settings.model_id),
+        model=OpenAIChat(id=settings.model_id, reasoning_effort=settings.reasoning_effort),
         instructions=_INSTRUCTIONS,
         additional_context=(
             "ESTOQUE ATUAL (external_id|descrição|ano|preço|km|categoria|câmbio|"

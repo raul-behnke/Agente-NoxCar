@@ -61,6 +61,10 @@ def parse_structured(
     # failed call + slow reasoning retry every turn). Retry below stays as safety.
     if temperature is not None and not _omit_temperature(model):
         kwargs["temperature"] = temperature
+    # reasoning models: cap reasoning effort to keep the turn fast (default medium
+    # is slow). Only valid for gpt-5/o-series.
+    if _omit_temperature(model) and settings.reasoning_effort:
+        kwargs["reasoning_effort"] = settings.reasoning_effort
 
     started = time.perf_counter()
     try:

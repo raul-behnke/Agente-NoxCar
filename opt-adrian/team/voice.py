@@ -25,7 +25,7 @@ def consultar_faq() -> str:
 def build_voice_agent() -> Agent:
     return Agent(
         name="Adrian",
-        model=OpenAIChat(id=settings.model_id),
+        model=OpenAIChat(id=settings.model_id, reasoning_effort=settings.reasoning_effort),
         instructions=VOICE_INSTRUCTIONS,
         output_schema=BubbleSequence,
         tools=[consultar_faq],

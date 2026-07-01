@@ -17,6 +17,10 @@ except Exception:  # noqa: BLE001 - dotenv optional
 class Settings:
     # Model (V1 per PRD §12.2)
     model_id: str = os.getenv("ADRIAN_MODEL_ID", "gpt-5-mini")
+    # Reasoning effort for gpt-5/o-series (minimal|low|medium|high). Default
+    # "medium" na OpenAI é LENTO (~3 chamadas sequenciais/turno). "low" corta
+    # bastante a latência sem perder qualidade em extração/atendimento.
+    reasoning_effort: str = os.getenv("ADRIAN_REASONING_EFFORT", "low")
 
     # Persistence: CRM history is the source of truth; this DB is operational
     # support only (audit, dedup, attempt counters, escalation/booking flags).
