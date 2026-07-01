@@ -31,6 +31,12 @@ class Settings:
     # History turns replayed into context.
     num_history_runs: int = int(os.getenv("ADRIAN_HISTORY_RUNS", "8"))
 
+    # Burst debounce (WhatsApp): quando o lead manda várias mensagens seguidas,
+    # espera esta janela (s) e processa só a ÚLTIMA — evita turnos preemptados e
+    # perda da 1ª mensagem (ex.: o nome). 0 desliga. A history do CRM já terá o
+    # burst completo quando o turno vencedor rodar (aggregate_burst).
+    burst_debounce_sec: float = float(os.getenv("ADRIAN_BURST_DEBOUNCE_SEC", "6"))
+
     # CRM (GoHighLevel-style) integration.
     crm_base_url: str = os.getenv("CRM_BASE_URL", "https://services.leadconnectorhq.com")
     crm_api_key: str = os.getenv("CRM_API_KEY", "")

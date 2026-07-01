@@ -7,6 +7,9 @@ aggregation -> orchestrator.process_turn with contactId preemption).
 """
 from __future__ import annotations
 
+import asyncio
+import itertools
+
 from fastapi import APIRouter, Request
 
 from audio.whisper import transcribe_many
@@ -18,6 +21,25 @@ from orchestrator import InboundEvent, process_turn, run_in_background
 from security import require_secret
 
 router = APIRouter()
+
+# Burst debounce state (per worker). Each inbound gets a monotonic token; after a
+# short wait, only the LATEST token for a contact proceeds — the earlier ones bail
+# because a newer message superseded them. The winner reads the full burst from
+# CRM history (aggregate_burst), so nothing the lead said is lost.
+_burst_seq = itertools.count(1)
+_burst_latest: dict[str, int] = {}
+
+
+async def _debounced_out(contact_id: str) -> bool:
+    """True if this arrival was superseded by a newer message for the contact."""
+    token = next(_burst_seq)
+    _burst_latest[contact_id] = token
+    if settings.burst_debounce_sec > 0:
+        await asyncio.sleep(settings.burst_debounce_sec)
+    if _burst_latest.get(contact_id) != token:
+        return True
+    _burst_latest.pop(contact_id, None)
+    return False
 
 
 async def _process_inbound(data: dict) -> None:
@@ -31,6 +53,11 @@ async def _process_inbound(data: dict) -> None:
 
 
 async def _process_inbound_inner(data: dict) -> None:
+    # debounce burst: wait a short window; only the LAST message for this contact
+    # proceeds (avoids preempted/dropped turns + loses no earlier message).
+    if await _debounced_out(data["contact_id"]):
+        log.info("inbound_superseded_by_burst", contact_id=data["contact_id"])
+        return
     audio_text = await transcribe_many(data["audio_urls"]) if data["audio_urls"] else ""
     text = "\n".join(t for t in (data["text"], audio_text) if t)
     if should_ignore(text, data["audio_urls"]):
