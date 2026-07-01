@@ -106,8 +106,13 @@ def plan_next_question(
     # 3. lead asked a question -> answer from FAQ, MAS ainda avança o funil no
     #    mesmo turno: responde a dúvida (intent=duvida) E carrega a próxima
     #    pergunta do funil como pergunta_alvo. Um pré-atendente responde e segue.
+    #    Detecta dúvida por intent OU por topics (multi-intenção, paridade AMC):
+    #    assim uma pergunta embutida numa resposta de funil não é ignorada.
     base = _funnel_next(state, update, after_hours)
-    if update and update.intent == "duvida":
+    is_duvida = bool(update) and (
+        update.intent == "duvida" or "duvida_operacional" in (update.topics or [])
+    )
+    if is_duvida:
         return NextQuestion(
             intent=QuestionIntent.duvida,
             field=base.field,

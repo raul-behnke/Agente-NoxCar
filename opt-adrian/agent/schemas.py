@@ -176,6 +176,12 @@ class StateUpdate(BaseModel):
     Defined here so schemas + merge live together."""
     collected: Collected = Field(default_factory=Collected)
     intent: Optional[str] = None
+    # Multi-intenção por turno (paridade AMC): o lead pode tocar em vários
+    # assuntos numa mensagem só ("É um Gol quitado. Atendem até que horas?").
+    # topics é a fonte PRIMÁRIA; intent_secundario mantido p/ compat.
+    # Valores canônicos: duvida_operacional | ver_outros_carros | pedido_foto | agendamento
+    intent_secundario: Optional[str] = None
+    topics: list[str] = Field(default_factory=list)
     pediu_humano: bool = False
     conflito: bool = False
     quer_agendar: bool = False

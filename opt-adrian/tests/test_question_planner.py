@@ -177,6 +177,16 @@ def test_duvida_intent_routes_to_faq():
     assert q.intent == QuestionIntent.duvida
 
 
+def test_duvida_via_topics_carries_funnel_question():
+    # pergunta embutida (topics=duvida_operacional) mesmo com intent de funil
+    # -> responde a dúvida E avança (não ignora a pergunta do lead)
+    s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True)
+    upd = StateUpdate(intent="qualificar", topics=["duvida_operacional"])
+    q = plan_next_question(s, upd)
+    assert q.intent == QuestionIntent.duvida
+    assert q.field == "nome"
+
+
 def test_duvida_still_carries_next_funnel_question():
     # lead faz pergunta E o funil pode avançar -> responde (duvida) + carrega a
     # próxima pergunta do funil no MESMO turno (pergunta_alvo preenchida)

@@ -35,6 +35,22 @@ Extraia, quando presentes de forma clara, os campos do funil:
 - consorcio_contemplado (true/false se consórcio)
 - interesse_agendamento (true se quer visitar/agendar; false se recusou; null se não tocou)
 
+MULTI-INTENÇÃO (topics) — CRÍTICO:
+Liste em `topics` TODOS os assuntos da MENSAGEM ATUAL do lead (pode ter vários
+numa mensagem só). O funil segue normal E cada tópico é tratado no mesmo turno:
+- "duvida_operacional": QUALQUER pergunta sobre processo/preço/financiamento/
+  pagamento/troca/documentação/endereço/HORÁRIO DE FUNCIONAMENTO/localização/garantia.
+- "agendamento": quer marcar visita ou pergunta quando pode ir.
+- "ver_outros_carros": quer ver alternativas/outros modelos/mais opções.
+- "pedido_foto": quer imagem/foto.
+Também preencha `intent_secundario` com UM valor (compat), o mais relevante.
+Exemplos:
+- "É um Gol, quitado. Vocês atendem até que horas?" -> topics=["duvida_operacional"]
+- "Tem outro Onix? Aceitam financiamento?"          -> topics=["ver_outros_carros","duvida_operacional"]
+- "Manda fotos e o preço?"                          -> topics=["pedido_foto","duvida_operacional"]
+- "Compra à vista, sem troca"                        -> topics=[]  (só resposta de funil)
+NÃO repita tópico. topics=[] quando o turno é só resposta do funil.
+
 Sinais adicionais:
 - pediu_humano: true se pediu explicitamente falar com pessoa/vendedor/consultor.
 - conflito: true se mensagem agressiva, reclamação séria ou cenário emocional.

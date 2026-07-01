@@ -27,6 +27,14 @@ def detect_inventory_signal(
     c = state.collected
     if update and update.intent in _INVENTORY_INTENTS:
         return True
+    # multi-intenção (paridade AMC): pedido de outros modelos / foto num turno
+    # que também é resposta de funil -> ainda aciona o EstoqueExpert.
+    if update is not None:
+        topics = set(update.topics or [])
+        if update.intent_secundario in ("ver_outros_carros", "pedido_foto") or (
+            topics & {"ver_outros_carros", "pedido_foto"}
+        ):
+            return True
     # FIRST presentation only: interest set and nothing shown yet. (Do NOT compare
     # veiculo_interesse — a model NAME — against vehicles_shown, which holds IDs;
     # that never matched and made the ficha re-fire every turn.)
@@ -63,9 +71,18 @@ _OPTION_REQUEST_WORDS = (
 
 def lead_wants_options(update, last_message: str = "") -> bool:
     """True only when the lead explicitly asks to see more/other vehicles. Until
-    then we present a SINGLE closest match and qualify first (no auto-lists)."""
-    if update is not None and getattr(update, "intent", None) == "ver_outros_carros":
-        return True
+    then we present a SINGLE closest match and qualify first (no auto-lists).
+
+    Multi-intenção (paridade AMC): reconhece o pedido de opções também por
+    intent_secundario/topics, não só pela intent primária ou por palavra-chave —
+    assim o agente APRESENTA LISTA de modelos quando o lead pede."""
+    if update is not None:
+        if getattr(update, "intent", None) in ("ver_outros_carros", "apresentar"):
+            return True
+        if getattr(update, "intent_secundario", None) == "ver_outros_carros":
+            return True
+        if "ver_outros_carros" in (getattr(update, "topics", None) or []):
+            return True
     return bool(last_message) and any(
         w in last_message.lower() for w in _OPTION_REQUEST_WORDS
     )

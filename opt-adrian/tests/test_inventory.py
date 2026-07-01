@@ -79,6 +79,21 @@ def test_signal_not_refired_after_shown_on_faq_question():
     assert detect_inventory_signal(s, None, "quanto de entrada preciso dar nesse?") is False
 
 
+def test_signal_on_ver_outros_via_topics():
+    # lead pede outros modelos (topics) mesmo dando dado de funil -> aciona inventory
+    s = _state(veiculo_interesse="Onix")
+    s.vehicles_shown = ["1"]
+    upd = StateUpdate(intent="qualificar", topics=["ver_outros_carros"])
+    assert detect_inventory_signal(s, upd, "sem troca") is True
+
+
+def test_lead_wants_options_via_topics():
+    from team.validation import lead_wants_options
+    upd = StateUpdate(intent="qualificar", topics=["ver_outros_carros"])
+    assert lead_wants_options(upd, "") is True
+    assert lead_wants_options(StateUpdate(intent_secundario="ver_outros_carros"), "") is True
+
+
 def test_signal_suppressed_during_troca_collection():
     # lead describes THEIR trade-in car (km/ano/modelo) -> NOT an inventory query;
     # must not re-present the interest vehicle
