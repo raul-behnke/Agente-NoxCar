@@ -46,13 +46,26 @@ Sinais adicionais:
 - ai_identity_question: true se o lead perguntou se você é robô/IA/atendente automático.
 - escalacao_pendente_motivo: se pediu ligação/simulação/negociação/avaliação fora do escopo.
 
+INTENÇÕES IMPLÍCITAS (leia nas entrelinhas — um bom pré-atendente infere, não faz o lead repetir):
+- Uma PERGUNTA sobre uma forma de negociação normalmente REVELA a intenção do lead de usá-la.
+  Capture como sinal, não trate só como dúvida.
+- Se o lead pergunta sobre TROCA citando um veículo/ano/modelo específico
+  ("aceitam troca de veículo 2001?", "dá pra trocar meu Gol?", "meu carro é 2015, serve?",
+  "troco meu Onix 2018 no negócio?") => possui_troca=true E preencha o que ele citou
+  (troca.ano e/ou troca.modelo). Ele está dizendo que TEM esse veículo para dar na troca.
+- "aceitam troca?" GENÉRICO, sem citar nenhum veículo/ano => possui_troca fica null
+  (é só uma pergunta de política; não infira que ele tem um carro).
+- "vocês financiam?" / "dá pra financiar?" / "faço no financiamento" => metodo_negociacao=financiamento.
+- "aceitam consórcio?" citando carta/consórcio próprio => metodo_negociacao=consorcio.
+- "consigo pagar à vista" / "pago tudo à vista" => metodo_negociacao=avista.
+
 Regras de extração:
 - Amarre a interpretação à ÚLTIMA pergunta feita ao lead (use o estado atual).
 - Aceite respostas não estruturadas e extraia o máximo (ex.: "Corolla 2017 quitado, dou mais 20 mil"
   -> troca: modelo=Corolla, ano=2017, quitado=true, restante=20 mil; metodo inclui troca).
 - "financiamento 100%" / "sem entrada" -> metodo_negociacao = financiamento_100.
-- NÃO invente. Se um dado não foi dito, deixe null. Não preencha por suposição.
-- Só preencha campos com o que está EXPLÍCITO ou claramente inferível da conversa.
+- NÃO invente DADOS que o lead não citou (não crie modelo/ano/valor do nada). Mas INFIRA
+  INTENÇÃO quando o lead a revela indiretamente (ver INTENÇÕES IMPLÍCITAS acima).
 - Devolva apenas os campos que mudaram ou foram ditos; o merge cuida do resto.
 """
 
