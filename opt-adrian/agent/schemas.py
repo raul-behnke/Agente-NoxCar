@@ -42,10 +42,9 @@ class TrocaInfo(BaseModel):
     restante: Optional[str] = None
 
     def is_complete(self) -> bool:
-        return all(
-            v is not None
-            for v in (self.modelo, self.ano, self.km, self.quitado, self.restante)
-        )
+        # modelo/ano/km travam o funil; `quitado` é opcional e `restante` foi
+        # removido do gate (mantido só como campo livre p/ retrocompat).
+        return all(v is not None for v in (self.modelo, self.ano, self.km))
 
 
 class Collected(BaseModel):
@@ -56,9 +55,12 @@ class Collected(BaseModel):
     metodo_negociacao: Optional[MetodoNegociacao] = None
     possui_troca: Optional[bool] = None
     troca: TrocaInfo = Field(default_factory=TrocaInfo)
+    possui_entrada: Optional[bool] = None      # eixo entrada (gate p/ valor_entrada)
     valor_entrada: Optional[str] = None        # down payment / cash upfront (trade-in is NOT entrada)
     valor_financiado: Optional[str] = None     # amount the lead wants to FINANCE
+    faixa_parcela: Optional[str] = None        # só se financiamento / financiamento_100
     consorcio_contemplado: Optional[bool] = None
+    cidade: Optional[str] = None               # coletada SEMPRE (dentro e fora do horário)
     interesse_agendamento: Optional[bool] = None
 
 
@@ -66,20 +68,21 @@ PRIORITY_FIELDS = (
     "nome",
     "veiculo_interesse",
     "veiculo_interesse_confirmado",
-    "metodo_negociacao",
     "possui_troca",
     "troca",
+    "possui_entrada",
     "valor_entrada",
+    "metodo_negociacao",
+    "faixa_parcela",
     "consorcio_contemplado",
+    "cidade",
     "interesse_agendamento",
 )
 
 
 def _troca_relevant(c: Collected) -> bool:
-    return (
-        c.metodo_negociacao in (MetodoNegociacao.troca, MetodoNegociacao.combinacao)
-        or c.possui_troca is True
-    )
+    # eixo troca é dirigido só pelo gate `possui_troca` (ortogonal ao método).
+    return c.possui_troca is True
 
 
 def compute_missing(c: Collected) -> list[str]:
@@ -95,22 +98,35 @@ def compute_missing(c: Collected) -> list[str]:
         missing.append("veiculo_interesse")
     if c.veiculo_interesse_confirmado is not True:
         missing.append("veiculo_interesse_confirmado")
-    if c.metodo_negociacao is None:
-        missing.append("metodo_negociacao")
-        return missing  # sub-fields unknowable until the method is known
 
-    m = c.metodo_negociacao
-    if _troca_relevant(c) and not c.troca.is_complete():
+    # eixo troca (gate booleano -> subfields quando True)
+    if c.possui_troca is None:
+        missing.append("possui_troca")
+    elif _troca_relevant(c) and not c.troca.is_complete():
         missing.append("troca")
-    if (
-        m in (MetodoNegociacao.financiamento, MetodoNegociacao.combinacao)
-        and not (c.valor_entrada or c.valor_financiado)
-    ):
+
+    # eixo entrada (gate booleano -> valor quando True)
+    if c.possui_entrada is None:
+        missing.append("possui_entrada")
+    elif c.possui_entrada is True and not (c.valor_entrada or c.valor_financiado):
         # either a down payment OR a financed amount satisfies the money question
         missing.append("valor_entrada")
-    if m == MetodoNegociacao.consorcio and c.consorcio_contemplado is None:
+
+    # método de negociação (funding core)
+    m = c.metodo_negociacao
+    if m is None:
+        missing.append("metodo_negociacao")
+    elif m in (MetodoNegociacao.financiamento, MetodoNegociacao.financiamento_100):
+        if not c.faixa_parcela:
+            missing.append("faixa_parcela")
+    elif m == MetodoNegociacao.consorcio and c.consorcio_contemplado is None:
         missing.append("consorcio_contemplado")
-    # avista / financiamento_100 -> no sub-fields (Q2/Q4)
+    # avista / troca / combinacao -> sem sub-fields de método
+
+    # cidade sempre exigida (dentro e fora do horário)
+    if not c.cidade:
+        missing.append("cidade")
+
     return missing
 
 

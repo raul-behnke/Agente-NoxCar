@@ -77,6 +77,7 @@ def build_voice_payload(
     photos: Optional[list[str]] = None,
     veiculo_destaque: Optional[dict] = None,
     veiculos_opcoes: Optional[list[dict]] = None,
+    after_hours: bool = False,
 ) -> str:
     fotos_serao_enviadas = bool(photos)
 
@@ -124,7 +125,19 @@ def build_voice_payload(
             "JÁ houve saudação antes — NÃO se apresente de novo, NÃO repita 'Olá, aqui é o Adrian', "
             "NÃO pergunte o nome de novo se já perguntou. Continue a conversa do ponto atual."
             if state.saudacao_feita
-            else "Primeiro contato: apresente-se UMA vez ('Olá! Aqui é o Adrian da NOXCAR')."
+            else (
+                "Primeiro contato FORA DO HORÁRIO comercial: apresente-se UMA vez "
+                "('Olá! Aqui é o Adrian da NOXCAR'), avise com naturalidade que a loja está "
+                "fechada agora e que você vai adiantar o atendimento. Enviamos um vídeo da estrutura."
+                if after_hours
+                else "Primeiro contato: apresente-se UMA vez ('Olá! Aqui é o Adrian da NOXCAR')."
+            )
+        ),
+        "diretiva_modo": (
+            "MODO FORA-DO-HORÁRIO: apenas QUALIFIQUE. NÃO ofereça agendar visita, NÃO pressione "
+            "para fechar. Colete os dados com leveza; um consultor dá sequência no horário comercial."
+            if after_hours
+            else None
         ),
         "veiculo_para_apresentar": destaque,  # SINGLE closest match (prose, no bullets)
         "veiculos_opcoes": opcoes,  # only when lead asked for options (prose, max 3)

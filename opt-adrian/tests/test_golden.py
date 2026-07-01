@@ -62,10 +62,12 @@ def _harness(monkeypatch, update, turn=None):
     monkeypatch.setattr(orch, "crm", crm)
     monkeypatch.setattr(orch, "_extract", lambda h, s, m: update)
 
-    async def fake_gen(state, nq, upd, msg, history=None):
+    async def fake_gen(state, nq, upd, msg, history=None, after_hours=False):
         return turn or SimpleNamespace(bubbles=["resposta"], shown_external_ids=[], photos=[])
 
     monkeypatch.setattr(orch, "_generate", fake_gen)
+    # pin clock: golden scenarios assert in-hours behavior deterministically
+    monkeypatch.setattr(orch, "is_after_hours", lambda *a, **k: False)
     return crm
 
 
@@ -85,9 +87,10 @@ def _run(ev):
 def test_combinacao_complete_offers_scheduling_not_escalate(monkeypatch):
     upd = StateUpdate(collected=Collected(
         nome="João", veiculo_interesse="Compass", veiculo_interesse_confirmado=True,
-        metodo_negociacao=MetodoNegociacao.combinacao, possui_troca=True,
-        troca=TrocaInfo(modelo="HB20", ano="2018", km="50000", quitado=True, restante="15000"),
-        valor_entrada="10000",
+        metodo_negociacao=MetodoNegociacao.financiamento, possui_troca=True,
+        troca=TrocaInfo(modelo="HB20", ano="2018", km="50000"),
+        possui_entrada=True, valor_entrada="10000", faixa_parcela="até 1500",
+        cidade="Joinville",
     ))
     _harness(monkeypatch, upd)
     r = _run(_ev())

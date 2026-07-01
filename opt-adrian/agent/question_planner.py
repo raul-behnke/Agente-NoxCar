@@ -44,20 +44,23 @@ CANONICAL_QUESTIONS: dict[str, str] = {
     "nome": "Como posso te chamar?",
     "veiculo_interesse": "Qual veículo você está procurando?",
     "veiculo_interesse_confirmado": "É esse veículo mesmo que você quer ver?",
+    "possui_troca": "Você tem algum veículo para dar na troca?",
+    "possui_entrada": "Você pretende dar algum valor de entrada?",
     "metodo_negociacao": (
-        "Como você pretende fazer a negociação? Tem veículo na troca ou um valor de entrada?"
+        "Como você pretende fazer a negociação? Financiamento, à vista ou consórcio?"
     ),
+    "faixa_parcela": "Qual faixa de parcela cabe no seu orçamento?",
     "valor_entrada": "Qual valor você tem de entrada?",
     "consorcio_contemplado": "Sua carta de consórcio já está contemplada?",
+    "cidade": "De qual cidade você fala?",
     "troca.modelo": "Qual o modelo do veículo que você quer dar na troca?",
     "troca.ano": "Qual o ano desse veículo de troca?",
     "troca.km": "Quantos km ele tem, mais ou menos?",
     "troca.quitado": "Esse veículo de troca já está quitado?",
-    "troca.restante": "Quanto você pretende complementar na negociação?",
     "agendamento": "Quer agendar uma visita para ver o veículo de perto?",
 }
 
-_TROCA_SUBFIELDS = ("modelo", "ano", "km", "quitado", "restante")
+_TROCA_SUBFIELDS = ("modelo", "ano", "km", "quitado")
 
 
 def _next_troca_subfield(troca, skipped: set[str] | None = None) -> str | None:
@@ -81,7 +84,9 @@ def _make(state: SessionState, field: str, intent: QuestionIntent) -> NextQuesti
 
 
 def plan_next_question(
-    state: SessionState, update: Optional[StateUpdate] = None
+    state: SessionState,
+    update: Optional[StateUpdate] = None,
+    after_hours: bool = False,
 ) -> NextQuestion:
     c = state.collected
 
@@ -89,7 +94,9 @@ def plan_next_question(
     if state.terminal_reason:
         return NextQuestion(intent=QuestionIntent.nenhum)
 
-    # 2. scheduling intent (premature allowed — grill Q4): explicit wish or chosen slot
+    # 2. scheduling intent (premature allowed — grill Q4): explicit wish or chosen slot.
+    #    Fora-do-horário: se o lead PEDIR agendar, ainda tratamos (booking segue ativo);
+    #    o que o modo suprime é a OFERTA proativa (passo 6), não o pedido do lead.
     if update and (update.quer_agendar or update.chosen_slot_iso):
         return NextQuestion(
             intent=QuestionIntent.agendamento,
@@ -121,8 +128,10 @@ def plan_next_question(
             continue
         return _make(state, field, QuestionIntent.funil)
 
-    # 6. funnel complete -> OFFER scheduling once (desfecho Q4)
-    if c.interesse_agendamento is None:
+    # 6. funnel complete -> OFFER scheduling once (desfecho Q4).
+    #    Fora-do-horário: suprime a oferta -> orchestrator encerra em
+    #    qualificado_fora_horario (não há vendedor p/ dar sequência agora).
+    if not after_hours and c.interesse_agendamento is None:
         return NextQuestion(
             intent=QuestionIntent.agendamento,
             canonical_text=CANONICAL_QUESTIONS["agendamento"],

@@ -48,9 +48,12 @@ def _merge_collected(cur: Collected, inc: Collected) -> Collected:
         metodo_negociacao=_override(cur.metodo_negociacao, inc.metodo_negociacao),
         possui_troca=_tri_state(cur.possui_troca, inc.possui_troca),
         troca=_merge_troca(cur.troca, inc.troca),
+        possui_entrada=_tri_state(cur.possui_entrada, inc.possui_entrada),
         valor_entrada=_override(cur.valor_entrada, inc.valor_entrada),
         valor_financiado=_override(cur.valor_financiado, inc.valor_financiado),
+        faixa_parcela=_override(cur.faixa_parcela, inc.faixa_parcela),
         consorcio_contemplado=_tri_state(cur.consorcio_contemplado, inc.consorcio_contemplado),
+        cidade=_fill_if_empty(cur.cidade, inc.cidade),
         interesse_agendamento=_tri_state(cur.interesse_agendamento, inc.interesse_agendamento),
     )
 

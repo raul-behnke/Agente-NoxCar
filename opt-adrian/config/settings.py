@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 try:  # load adrian/.env if python-dotenv is available (dev convenience)
     from dotenv import load_dotenv
@@ -46,6 +46,25 @@ class Settings:
     calendar_id: str = os.getenv("CRM_CALENDAR_ID", "")
     app_timezone: str = os.getenv("ADRIAN_TZ", "America/Sao_Paulo")
     appointment_duration_min: int = int(os.getenv("ADRIAN_APPT_MIN", "60"))
+
+    # Business hours (loja aberta). weekday: 0=Mon..6=Sun -> (open, close) as
+    # "HH:MM" strings, or None = closed. When the clock is outside every open
+    # window the agent runs in after-hours mode: qualifies only, never offers to
+    # schedule (agent/hours.py). Regra dura em Python, não no prompt.
+    business_hours: dict = field(default_factory=lambda: {
+        0: ("08:00", "18:30"),  # segunda
+        1: ("08:00", "18:30"),  # terça
+        2: ("08:00", "18:30"),  # quarta
+        3: ("08:00", "18:30"),  # quinta
+        4: ("08:00", "18:30"),  # sexta
+        5: ("09:00", "13:00"),  # sábado
+        6: None,                # domingo (fechado)
+    })
+    # Vídeo da estrutura enviado 1x na saudação fora-do-horário (URL, type SMS).
+    afterhours_video_url: str = os.getenv(
+        "URL_VIDEO",
+        "https://assets.cdn.filesafe.space/wbSVxrr4mvYNRaIw1eJ7/media/6a452aaab653a0ddc229a739.mp4",
+    )
 
     # Shared secret the CRM appends to the inbound webhook (see security.py).
     webhook_secret: str = os.getenv("ADRIAN_WEBHOOK_SECRET", "")
