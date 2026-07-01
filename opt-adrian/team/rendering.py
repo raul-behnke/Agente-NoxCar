@@ -14,7 +14,20 @@ from typing import Optional
 
 from agent.schemas import SessionState
 from agent.templates import render_vehicle_card, render_vehicle_list
+from config.settings import settings
 from team.schemas import BubbleSequence, InventoryAction, InventoryDecision
+
+_WEEKDAYS_PT = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
+
+
+def _format_business_hours() -> str:
+    """Horário de funcionamento legível (a partir de settings.business_hours),
+    para a voice responder 'até que horas atendem?' sem inventar."""
+    parts = []
+    for i, dia in enumerate(_WEEKDAYS_PT):
+        janela = settings.business_hours.get(i)
+        parts.append(f"{dia}: fechado" if janela is None else f"{dia}: {janela[0]}–{janela[1]}")
+    return "; ".join(parts)
 
 
 def _vehicles_from_decision(decision: InventoryDecision, inventory: list[dict]) -> list[dict]:
@@ -161,6 +174,14 @@ def build_voice_payload(
         ),
         "hint_estoque": decision.hint_narrativo if decision else None,
         "diretiva_identidade_ia": ai_directive,
+        "horario_funcionamento": _format_business_hours(),
+        "contrato_duvida": (
+            "Se a mensagem do lead contém uma PERGUNTA (ex.: horário de atendimento, "
+            "formas de pagamento, localização), RESPONDA-A de forma curta ANTES da "
+            "pergunta_alvo — use faq_yaml e horario_funcionamento; não invente. "
+            "Depois de responder, faça a pergunta_alvo NO MESMO turno. Se não souber, "
+            "diga que o consultor confirma e siga com a pergunta_alvo."
+        ),
         "faq_yaml": faq_yaml,
     }
     return json.dumps(payload, ensure_ascii=False)

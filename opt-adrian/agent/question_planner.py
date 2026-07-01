@@ -103,10 +103,25 @@ def plan_next_question(
             canonical_text=CANONICAL_QUESTIONS["agendamento"],
         )
 
-    # 3. lead asked a question -> answer from FAQ this turn
+    # 3. lead asked a question -> answer from FAQ, MAS ainda avança o funil no
+    #    mesmo turno: responde a dúvida (intent=duvida) E carrega a próxima
+    #    pergunta do funil como pergunta_alvo. Um pré-atendente responde e segue.
+    base = _funnel_next(state, update, after_hours)
     if update and update.intent == "duvida":
-        return NextQuestion(intent=QuestionIntent.duvida)
+        return NextQuestion(
+            intent=QuestionIntent.duvida,
+            field=base.field,
+            canonical_text=base.canonical_text,
+            exhausted=base.exhausted,
+        )
+    return base
 
+
+def _funnel_next(
+    state: SessionState, update: Optional[StateUpdate], after_hours: bool
+) -> NextQuestion:
+    """A próxima ação do FUNIL (sem tratar dúvida/agendamento-explícito)."""
+    c = state.collected
     skipped = set(state.skipped_fields)
 
     # 4. vehicle identified but not confirmed -> present/confirm (foco)
@@ -119,11 +134,9 @@ def plan_next_question(
 
     # 4b. FOLLOW THE LEAD'S THREAD: se a mensagem deste turno abriu um assunto do
     # funil (troca / entrada), continue ESSE fluxo em vez de voltar para campos
-    # anteriores (ex.: nome). Um vendedor experiente segue o que o lead trouxe —
-    # não ignora a troca pra perguntar o nome primeiro.
+    # anteriores (ex.: nome). Um vendedor experiente segue o que o lead trouxe.
     if update is not None:
         uc = update.collected
-        # troca: lead sinalizou que tem veículo na troca (gate ou algum subcampo)
         troca_tocada = uc.possui_troca is True or any(
             getattr(uc.troca, s) is not None for s in _TROCA_SUBFIELDS
         )
@@ -131,7 +144,6 @@ def plan_next_question(
             sub = _next_troca_subfield(c.troca, skipped)
             if sub is not None:
                 return _make(state, sub, QuestionIntent.funil)
-        # entrada: lead falou de entrada -> puxe o valor antes de recuar
         entrada_tocada = uc.possui_entrada is True or bool(uc.valor_entrada)
         if (
             entrada_tocada
@@ -153,14 +165,11 @@ def plan_next_question(
         return _make(state, field, QuestionIntent.funil)
 
     # 6. funnel complete -> OFFER scheduling once (desfecho Q4).
-    #    Fora-do-horário: suprime a oferta -> orchestrator encerra em
-    #    qualificado_fora_horario (não há vendedor p/ dar sequência agora).
     if not after_hours and c.interesse_agendamento is None:
         return NextQuestion(
             intent=QuestionIntent.agendamento,
             canonical_text=CANONICAL_QUESTIONS["agendamento"],
         )
 
-    # 7. complete + scheduling resolved (declined/booked) -> nothing to ask;
-    #    orchestrator handles the outcome (book or escalate qualificado_sem_agenda)
+    # 7. complete + scheduling resolved -> nothing to ask
     return NextQuestion(intent=QuestionIntent.nenhum)

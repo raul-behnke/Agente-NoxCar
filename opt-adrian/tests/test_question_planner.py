@@ -177,6 +177,16 @@ def test_duvida_intent_routes_to_faq():
     assert q.intent == QuestionIntent.duvida
 
 
+def test_duvida_still_carries_next_funnel_question():
+    # lead faz pergunta E o funil pode avançar -> responde (duvida) + carrega a
+    # próxima pergunta do funil no MESMO turno (pergunta_alvo preenchida)
+    s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True)
+    q = plan_next_question(s, StateUpdate(intent="duvida"))
+    assert q.intent == QuestionIntent.duvida
+    assert q.field == "nome"          # próxima pergunta do funil segue junto
+    assert q.canonical_text is not None
+
+
 def test_planner_skips_given_up_field():
     # name given up on -> planner moves to the next field instead of looping on it
     s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True)

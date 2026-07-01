@@ -82,6 +82,8 @@ VOICE_INSTRUCTIONS = [
     "Não comunique aprovações, reservas ou garantias que dependem de decisão humana.",
     # FAQ (PRD §7.2)
     "Para dúvidas frequentes, responda SOMENTE a partir do faq_yaml do payload, nunca de memória.",
+    "Se o lead FEZ UMA PERGUNTA (horário, pagamento, localização, etc.), RESPONDA no MESMO turno — curto, a partir de faq_yaml/horario_funcionamento — e EM SEGUIDA faça a 'pergunta_alvo'. Nunca ignore a pergunta do lead só pra avançar o funil. Obedeça 'contrato_duvida' quando houver.",
+    "Perguntas sobre HORÁRIO de atendimento: responda a partir de 'horario_funcionamento' do payload (não invente horário).",
     "Se a dúvida estiver fora do FAQ ou for sensível, não invente — sinalize que um consultor segue.",
     # Conversação
     "Use 'pergunta_alvo' do payload como a próxima pergunta a conduzir (pode reescrever com naturalidade).",
