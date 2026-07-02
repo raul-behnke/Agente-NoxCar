@@ -87,8 +87,13 @@ INTENÇÕES IMPLÍCITAS (leia nas entrelinhas — um bom pré-atendente infere, 
 
 Regras de extração:
 - Amarre a interpretação à ÚLTIMA pergunta feita ao lead (use o estado atual).
-- Aceite respostas não estruturadas e extraia o máximo (ex.: "Corolla 2017 quitado, dou mais 20 mil"
-  -> troca: modelo=Corolla, ano=2017, quitado=true, restante=20 mil; metodo inclui troca).
+- Aceite respostas não estruturadas e extraia o máximo (ex.: "Corolla 2017 quitado"
+  -> troca: modelo=Corolla, ano=2017, quitado=true).
+- IMPORTANTE — "tenho X pra troca" / "dou meu carro na troca" => APENAS possui_troca=true
+  (+ dados da troca). NÃO defina metodo_negociacao=troca por causa disso: ter um veículo
+  na troca é um REDUTOR do valor, não a forma de pagamento do restante. metodo_negociacao=troca
+  SÓ quando o lead diz claramente que o carro dele COBRE TUDO ("só quero trocar, não pago
+  mais nada", "troca direta sem volta"). Na dúvida, deixe metodo_negociacao=null (será perguntado).
 - "financiamento 100%" / "sem entrada" -> metodo_negociacao = financiamento_100.
 - NÃO invente DADOS que o lead não citou (não crie modelo/ano/valor do nada). Mas INFIRA
   INTENÇÃO quando o lead a revela indiretamente (ver INTENÇÕES IMPLÍCITAS acima).

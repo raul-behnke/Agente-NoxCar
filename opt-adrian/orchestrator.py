@@ -323,7 +323,13 @@ async def run_turn(ev: InboundEvent) -> Result:
 
     # 14. funil completo -> handoff DIRETO (sem oferecer agendamento). O vendedor
     #     entra em contato no horário comercial pra dar sequência.
-    if funnel_complete(state.collected):
+    #     EXCEÇÃO: se o lead fez uma PERGUNTA neste turno, responde primeiro
+    #     (turno normal) e o handoff acontece no próximo turno — não deixa a
+    #     dúvida sem resposta.
+    lead_perguntou = bool(update) and (
+        update.intent == "duvida" or "duvida_operacional" in (update.topics or [])
+    )
+    if funnel_complete(state.collected) and not lead_perguntou:
         return _escalate(
             state, ev, TerminalReason.qualificado_sem_agenda, "qualificado, handoff para o vendedor"
         )
