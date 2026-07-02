@@ -130,9 +130,16 @@ def _escalate(state: SessionState, ev: InboundEvent, reason: TerminalReason, mot
                  {"terminal_reason": reason.value})
     if res.get("duplicate"):
         return Result("duplicate", "escalonamento já realizado")
-    # transition message to the lead (PRD §6.6)
+    # transition message to the lead (PRD §6.6) — contextual ao motivo.
+    if reason == TerminalReason.handoff_solicitado:
+        msg = "Claro! Já vou te conectar com um consultor que segue com você daqui. 👍"
+    else:
+        msg = (
+            "Perfeito! Já deixei todas as informações registradas. "
+            "Nosso vendedor entrará em contato no horário comercial para continuar seu atendimento."
+        )
     try:
-        crm.send_message(ev.contact_id, "Vou te conectar com um consultor que segue daqui. 👍")
+        crm.send_message(ev.contact_id, msg)
     except Exception:  # noqa: BLE001
         pass
     return Result("escalated", motivo)
