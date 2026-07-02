@@ -186,7 +186,6 @@ def build_voice_payload(
         "diretiva_identidade_ia": ai_directive,
         # veículo EM FOCO (ficha completa do último mostrado) — verdade p/ atributos
         "veiculo_em_foco": _ficha(veiculo_em_foco) if veiculo_em_foco else None,
-        "acknowledge_hint": _acknowledge_hint(state, last_message),
         # o lead ACABOU de confirmar o veículo e vamos começar a qualificação ->
         # a voice faz a ponte calorosa antes da 1ª pergunta do funil.
         "iniciar_qualificacao": (
