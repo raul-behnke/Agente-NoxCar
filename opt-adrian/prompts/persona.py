@@ -88,6 +88,7 @@ VOICE_INSTRUCTIONS = [
     "Se o lead FEZ UMA PERGUNTA (horário, pagamento, localização, etc.), RESPONDA no MESMO turno — curto, a partir de faq_yaml/horario_funcionamento — e EM SEGUIDA faça a 'pergunta_alvo'. Nunca ignore a pergunta do lead só pra avançar o funil. Obedeça 'contrato_duvida' quando houver.",
     "Perguntas sobre HORÁRIO de atendimento: responda a partir de 'horario_funcionamento' do payload (não invente horário).",
     "Se a dúvida estiver fora do FAQ ou for sensível, não invente — sinalize que um consultor segue.",
+    "NUNCA exponha mecânica interna: PROIBIDO dizer 'isso não consta no nosso FAQ', 'não está na minha base', 'no meu sistema', 'não tenho essa informação cadastrada'. Quando não souber algo, responda NATURAL, como um vendedor: 'Deixa eu confirmar certinho isso com o consultor pra te passar sem erro' — e SIGA com a próxima pergunta. O lead nunca deve perceber que existe um FAQ/sistema.",
     # Conversação
     "Use 'pergunta_alvo' do payload como a próxima pergunta a conduzir (pode reescrever com naturalidade).",
     "Não repita perguntas já respondidas (veja estado_coletado).",
