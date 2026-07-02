@@ -29,7 +29,7 @@ from team.validation import (
 from team.voice import build_voice_agent
 from tools.faq import get_faq_raw
 from tools.inventory import load_inventory
-from tools.photos import resolve_photos
+from tools.photos import build_photo_payload_by_id, resolve_photos
 
 
 @dataclass
@@ -125,16 +125,24 @@ async def run_team_turn(
     # Photos only for a single focused vehicle OR explicit lead request (not on
     # a multi-option list before the lead picks one).
     photos = []
+    fotos_indisponiveis = False
     if should_send_photos(decision, update, last_message):
-        # single focused vehicle (1 selected) -> more photos; a list -> 1 each
-        per = (
-            settings.photos_per_vehicle_single
-            if len(selected) <= 1
-            else settings.photos_per_vehicle_list
+        # o veículo tem fotos REAIS cadastradas suficientes? (só capa/1 imagem = não)
+        disponiveis = max(
+            (len(build_photo_payload_by_id(eid, inv)) for eid in decision.enviar_fotos_de),
+            default=0,
         )
-        photos = resolve_photos(
-            decision.enviar_fotos_de, inv, per_vehicle=per, total=settings.photos_total_max
-        )
+        if disponiveis < settings.min_photos_to_send:
+            fotos_indisponiveis = True  # não envia; consultor manda depois
+        else:
+            per = (
+                settings.photos_per_vehicle_single
+                if len(selected) <= 1
+                else settings.photos_per_vehicle_list
+            )
+            photos = resolve_photos(
+                decision.enviar_fotos_de, inv, per_vehicle=per, total=settings.photos_total_max
+            )
 
     # veículo EM FOCO (paridade AMC): ficha completa do último veículo mostrado,
     # SEMPRE disponível — mesmo sem o EstoqueExpert rodar neste turno. Deixa a voice
@@ -161,6 +169,7 @@ async def run_team_turn(
         veiculo_destaque=veiculo_destaque,
         veiculos_opcoes=veiculos_opcoes,
         veiculo_em_foco=veiculo_em_foco,
+        fotos_indisponiveis=fotos_indisponiveis,
     )
     result = await voice.arun(input=payload)
     seq = result.content

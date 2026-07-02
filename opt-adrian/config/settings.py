@@ -100,6 +100,10 @@ class Settings:
     # Whisper transcription price (USD per audio minute) — PLACEHOLDER, confirm billing.
     whisper_price_usd_per_min: float = float(os.getenv("OPENAI_WHISPER_PRICE_PER_MIN", "0.006"))
 
+    # Mínimo de fotos REAIS cadastradas p/ enviar. Abaixo disso (ex.: só 1 imagem
+    # de capa), tratamos como "sem fotos cadastradas" e o consultor envia depois.
+    min_photos_to_send: int = int(os.getenv("PHOTOS_MIN_TO_SEND", "2"))
+
     # Photo caps (avoid spamming WhatsApp; vehicles can have 14+ photos each).
     photos_per_vehicle_single: int = int(os.getenv("PHOTOS_PER_VEHICLE_SINGLE", "4"))
     photos_per_vehicle_list: int = int(os.getenv("PHOTOS_PER_VEHICLE_LIST", "1"))

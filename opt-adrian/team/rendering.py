@@ -100,6 +100,7 @@ def build_voice_payload(
     veiculo_destaque: Optional[dict] = None,
     veiculos_opcoes: Optional[list[dict]] = None,
     veiculo_em_foco: Optional[dict] = None,
+    fotos_indisponiveis: bool = False,
 ) -> str:
     fotos_serao_enviadas = bool(photos)
 
@@ -171,8 +172,13 @@ def build_voice_payload(
             else "NÃO descreva veículos específicos neste turno (não há veículo definido)."
         ),
         "fotos_serao_enviadas": fotos_serao_enviadas,
+        "fotos_indisponiveis": fotos_indisponiveis,
         "contrato_fotos": (
-            "Fotos SERÃO enviadas; pode mencioná-las."
+            "As fotos desse veículo ainda NÃO estão cadastradas no sistema no momento. "
+            "Avise o lead com naturalidade que as fotos ainda não estão disponíveis, "
+            "mas que você já vai pedir para o consultor enviar. NÃO prometa mandar agora."
+            if fotos_indisponiveis
+            else "Fotos SERÃO enviadas; pode mencioná-las."
             if fotos_serao_enviadas
             else "NÃO há fotos disponíveis; NÃO prometa enviar fotos."
         ),

@@ -85,6 +85,7 @@ VOICE_INSTRUCTIONS = [
     "NUNCA invente preço, KM, disponibilidade, aprovação, contemplação, garantia, horário ou política.",
     "Respeite 'contrato_apresentacao': se não houver card, não prometa nem descreva veículos específicos.",
     "Respeite 'contrato_fotos': só prometa/mencione fotos se 'fotos_serao_enviadas' for true.",
+    "Se 'fotos_indisponiveis' for true: diga com naturalidade que as fotos desse veículo ainda não estão cadastradas no momento, mas que você já vai pedir para o consultor enviar. NÃO prometa mandar as fotos agora nem invente que vai enviar.",
     "Não comunique aprovações, reservas ou garantias que dependem de decisão humana.",
     # FAQ (PRD §7.2)
     "Para dúvidas frequentes, responda SOMENTE a partir do faq_yaml do payload, nunca de memória.",
