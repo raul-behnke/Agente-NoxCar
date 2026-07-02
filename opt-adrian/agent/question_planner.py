@@ -82,12 +82,12 @@ def _canonical_for(state: SessionState, field: str) -> Optional[str]:
     # parcela: no cartão a pergunta é sobre parcelar o valor.
     if field == "faixa_parcela" and state.collected.metodo_negociacao == MetodoNegociacao.cartao:
         return "Você pretende parcelar todo o valor no cartão?"
-    # método: se o lead já tem troca/entrada, o método é sobre o RESTANTE.
+    # método: se o lead já tem troca/entrada, o método é sobre COMPLEMENTAR a diferença.
     if field == "metodo_negociacao" and (
         state.collected.possui_troca is True or state.collected.possui_entrada is True
     ):
-        return ("E o restante da negociação, como você prefere fazer? "
-                "Financiamento, consórcio, à vista ou no cartão?")
+        return ("Além disso, você pretende complementar a diferença como? "
+                "À vista, financiamento, consórcio ou cartão?")
     return CANONICAL_QUESTIONS.get(field)
 
 
