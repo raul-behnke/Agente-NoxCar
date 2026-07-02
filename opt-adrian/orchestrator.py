@@ -364,10 +364,11 @@ async def run_turn(ev: InboundEvent) -> Result:
             log.info("field_skipped_after_attempts", contact_id=ev.contact_id, field=nq.field)
         nq = plan_next_question(state, update)
 
-    # 14. funnel complete but lead declined scheduling -> escalate (desfecho Q4)
-    if funnel_complete(state.collected) and state.collected.interesse_agendamento is False:
+    # 14. funil completo -> handoff DIRETO (sem oferecer agendamento). O vendedor
+    #     entra em contato no horário comercial pra dar sequência.
+    if funnel_complete(state.collected):
         return _escalate(
-            state, ev, TerminalReason.qualificado_sem_agenda, "qualificado, recusou agendamento"
+            state, ev, TerminalReason.qualificado_sem_agenda, "qualificado, handoff para o vendedor"
         )
 
     # 15. count this re-ask (anti-insistence). Conta SEMPRE que um campo do funil

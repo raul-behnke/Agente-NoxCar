@@ -123,9 +123,10 @@ def test_avista_skips_to_cidade():
 
 # --- scheduling / desfecho ------------------------------------------------
 
-def test_funnel_complete_offers_scheduling():
+def test_funnel_complete_no_scheduling_offer():
+    # não oferece agendamento; orchestrator faz handoff direto -> nada a perguntar
     q = plan_next_question(_complete())
-    assert q.intent == QuestionIntent.agendamento
+    assert q.intent == QuestionIntent.nenhum
 
 
 def test_follow_troca_thread_over_nome():

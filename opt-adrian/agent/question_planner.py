@@ -215,12 +215,6 @@ def _funnel_next(
             continue
         return _make(state, field, QuestionIntent.funil)
 
-    # 6. funnel complete -> OFFER scheduling once (desfecho Q4).
-    if c.interesse_agendamento is None:
-        return NextQuestion(
-            intent=QuestionIntent.agendamento,
-            canonical_text=CANONICAL_QUESTIONS["agendamento"],
-        )
-
-    # 7. complete + scheduling resolved -> nothing to ask
+    # 6. funil completo -> NÃO oferece agendamento; o orchestrator encerra em
+    #    handoff (o vendedor dá sequência). Nada a perguntar.
     return NextQuestion(intent=QuestionIntent.nenhum)

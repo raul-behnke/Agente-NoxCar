@@ -82,7 +82,7 @@ def _run(ev):
 
 # --- Cenário: troca + financiamento (combinação) completo -----------------
 
-def test_combinacao_complete_offers_scheduling_not_escalate(monkeypatch):
+def test_funnel_complete_handoff_no_scheduling(monkeypatch):
     upd = StateUpdate(collected=Collected(
         nome="João", veiculo_interesse="Compass", veiculo_interesse_confirmado=True,
         metodo_negociacao=MetodoNegociacao.financiamento, possui_troca=True,
@@ -92,9 +92,9 @@ def test_combinacao_complete_offers_scheduling_not_escalate(monkeypatch):
     ))
     _harness(monkeypatch, upd)
     r = _run(_ev())
-    # funnel complete, scheduling not yet decided -> agent offers (reply), no escalation
-    assert r.action == "replied"
-    assert load_or_new("c1").terminal_reason is None
+    # funil completo -> handoff DIRETO (sem oferecer agendamento)
+    assert r.action == "escalated"
+    assert load_or_new("c1").terminal_reason == TerminalReason.qualificado_sem_agenda.value
 
 
 # --- Cenário: combinação incompleta (falta km da troca) -------------------
