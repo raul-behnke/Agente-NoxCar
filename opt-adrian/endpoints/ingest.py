@@ -100,3 +100,22 @@ def extract_payload(payload: dict[str, Any]) -> dict[str, Any]:
 def should_ignore(text: str, audio_urls: list[str]) -> bool:
     """Image/doc without text and no audio -> nothing to process (PRD §7 inbound)."""
     return not text and not audio_urls
+
+
+def is_superseded_by_outbound(messages: list[dict]) -> bool:
+    """Dedup TEMPORAL (paridade AMC): True se a mensagem real mais recente da
+    conversa é um OUTBOUND posterior ao último inbound — ou seja, o agente já
+    respondeu depois da última fala do lead e este webhook é eco/retry antigo.
+
+    Mais robusto que dedup por message_id (que o GHL manda None)."""
+    real = [m for m in (messages or []) if not is_activity_event(m)]
+    if not real:
+        return False
+    inbound = [m for m in real if m.get("direction") == "inbound"]
+    if not inbound:
+        return False
+    latest_any = max(real, key=lambda m: m.get("dateAdded") or "")
+    latest_in = max(inbound, key=lambda m: m.get("dateAdded") or "")
+    return latest_any.get("direction") == "outbound" and (
+        (latest_any.get("dateAdded") or "") > (latest_in.get("dateAdded") or "")
+    )

@@ -20,6 +20,21 @@ from team.schemas import BubbleSequence, InventoryAction, InventoryDecision
 _WEEKDAYS_PT = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
 
 
+def _acknowledge_hint(state: SessionState, last_message: str) -> Optional[dict]:
+    """Dica determinística do que reconhecer com naturalidade (paridade AMC).
+    Evita microrreação forçada: só sugere reconhecer o que o lead ACABOU de dar."""
+    ack: dict = {}
+    low = (last_message or "").lower()
+    c = state.collected
+    if c.nome and c.nome.lower() in low and len(low) < 40:
+        ack["acabou_de_dar_nome"] = c.nome
+    if c.troca.quitado is False and ("financ" in low or "quitad" in low or "saldo" in low):
+        ack["situacao_troca"] = "troca ainda não quitada"
+    if c.cidade and c.cidade.lower() in low:
+        ack["mencionou_cidade"] = c.cidade
+    return ack or None
+
+
 def _format_business_hours() -> str:
     """Horário de funcionamento legível (a partir de settings.business_hours),
     para a voice responder 'até que horas atendem?' sem inventar."""
@@ -91,6 +106,7 @@ def build_voice_payload(
     veiculo_destaque: Optional[dict] = None,
     veiculos_opcoes: Optional[list[dict]] = None,
     after_hours: bool = False,
+    veiculo_em_foco: Optional[dict] = None,
 ) -> str:
     fotos_serao_enviadas = bool(photos)
 
@@ -174,6 +190,9 @@ def build_voice_payload(
         ),
         "hint_estoque": decision.hint_narrativo if decision else None,
         "diretiva_identidade_ia": ai_directive,
+        # veículo EM FOCO (ficha completa do último mostrado) — verdade p/ atributos
+        "veiculo_em_foco": _ficha(veiculo_em_foco) if veiculo_em_foco else None,
+        "acknowledge_hint": _acknowledge_hint(state, last_message),
         "horario_funcionamento": _format_business_hours(),
         "contrato_duvida": (
             "Se a mensagem do lead contém uma PERGUNTA (ex.: horário de atendimento, "

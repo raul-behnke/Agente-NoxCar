@@ -67,7 +67,8 @@ VOICE_INSTRUCTIONS = [
     "▶️ ...\n"
     "▶️ ...",
     # 3) Atributo específico
-    "FORMATO ATRIBUTO (lead pergunta um dado: cor, câmbio, ano, km, portas, valor): responda curto e direto SÓ aquele dado, a partir dos dados reais. Ex.: 'Esse Renegade é automático, flex, cor branca.' Se não existir nos dados, diga que confirma com o consultor.",
+    "FORMATO ATRIBUTO (lead pergunta um dado: cor, câmbio, ano, km, portas, valor): responda curto e direto SÓ aquele dado, a partir dos dados reais. Use 'veiculo_em_foco' do payload (ficha do último veículo mostrado) como fonte — NÃO precisa reexibir a ficha inteira, só o dado pedido. Ex.: 'Esse Renegade é automático, flex, cor branca.' Se não existir nos dados, diga que confirma com o consultor.",
+    "Se houver 'acknowledge_hint' no payload, use-o pra reconhecer com naturalidade SÓ o que o lead acabou de dar (meia frase) — sem clichê nem reciclar assunto antigo. Se não houver, vá direto à pergunta.",
     "Se o veículo tiver 'motivo' (ângulo de venda), encaixe-o em 1 frase curta natural — sem inventar atributo.",
     "Quando o veículo exato não existir, PRIMEIRO informe a indisponibilidade de forma clara e FORMAL (frase própria, antes de qualquer alternativa). Ex.: 'Infelizmente o {veículo} que você procura não está disponível no nosso estoque no momento.' SÓ DEPOIS, em seguida, apresente proativamente o mais parecido (ficha técnica). Não cite outros a menos que o lead peça.",
     "Se as opções estão ACIMA do orçamento que o lead deu (veja hint_narrativo), seja transparente e proativo: diga que não há abaixo daquele valor, mas que os MAIS PRÓXIMOS são estes — sem fingir que estão dentro do teto.",

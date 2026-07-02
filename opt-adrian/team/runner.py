@@ -137,6 +137,17 @@ async def run_team_turn(
             decision.enviar_fotos_de, inv, per_vehicle=per, total=settings.photos_total_max
         )
 
+    # veículo EM FOCO (paridade AMC): ficha completa do último veículo mostrado,
+    # SEMPRE disponível — mesmo sem o EstoqueExpert rodar neste turno. Deixa a voice
+    # responder atributos ("qual a cor?") sem re-exibir a ficha nem alucinar.
+    veiculo_em_foco = veiculo_destaque
+    if veiculo_em_foco is None:
+        foco_id = state.last_card_external_id or (
+            state.vehicles_shown[-1] if state.vehicles_shown else None
+        )
+        if foco_id:
+            veiculo_em_foco = by_id.get(str(foco_id))
+
     # 3. build voice payload + run voice agent
     voice = build_voice_agent()
     payload = build_voice_payload(
@@ -151,6 +162,7 @@ async def run_team_turn(
         veiculo_destaque=veiculo_destaque,
         veiculos_opcoes=veiculos_opcoes,
         after_hours=after_hours,
+        veiculo_em_foco=veiculo_em_foco,
     )
     result = await voice.arun(input=payload)
     seq = result.content

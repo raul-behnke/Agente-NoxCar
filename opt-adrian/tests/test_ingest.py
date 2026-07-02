@@ -5,6 +5,7 @@ from endpoints.ingest import (
     aggregate_burst,
     extract_payload,
     is_activity_event,
+    is_superseded_by_outbound,
     last_inbound_burst,
     should_ignore,
 )
@@ -31,6 +32,34 @@ _HISTORY = [
 
 def test_last_inbound_burst_stops_at_outbound_and_skips_activity():
     assert last_inbound_burst(_HISTORY) == ["quero um carro", "automatico"]
+
+
+# --- dedup temporal (supersede) ------------------------------------------
+
+def test_superseded_when_agent_already_replied():
+    # último real é outbound posterior ao inbound -> eco antigo -> supersede
+    hist = [
+        {"direction": "inbound", "body": "oi", "dateAdded": "2026-07-02T10:00:00Z"},
+        {"direction": "outbound", "body": "Olá!", "dateAdded": "2026-07-02T10:00:05Z"},
+    ]
+    assert is_superseded_by_outbound(hist) is True
+
+
+def test_not_superseded_when_inbound_is_latest():
+    hist = [
+        {"direction": "outbound", "body": "Olá!", "dateAdded": "2026-07-02T10:00:00Z"},
+        {"direction": "inbound", "body": "quero ver", "dateAdded": "2026-07-02T10:00:05Z"},
+    ]
+    assert is_superseded_by_outbound(hist) is False
+
+
+def test_supersede_ignores_activity_events():
+    hist = [
+        {"direction": "inbound", "body": "oi", "dateAdded": "2026-07-02T10:00:00Z"},
+        {"direction": "outbound", "type": "TYPE_ACTIVITY_X", "dateAdded": "2026-07-02T10:00:09Z"},
+    ]
+    # o outbound mais recente é activity -> não conta -> não supersede
+    assert is_superseded_by_outbound(hist) is False
 
 
 def test_aggregate_burst_appends_incoming():

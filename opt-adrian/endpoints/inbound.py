@@ -14,7 +14,12 @@ from fastapi import APIRouter, Request
 from audio.whisper import transcribe_many
 from config.settings import settings
 from db.sessions import is_latest_inbound_arrival, mark_inbound_arrival
-from endpoints.ingest import aggregate_burst, extract_payload, should_ignore
+from endpoints.ingest import (
+    aggregate_burst,
+    extract_payload,
+    is_superseded_by_outbound,
+    should_ignore,
+)
 from ghl.client import crm
 from obs import bind_ids, clear_ids, log
 from orchestrator import InboundEvent, process_turn, run_in_background
@@ -62,6 +67,11 @@ async def _process_inbound_inner(data: dict) -> None:
     except Exception as exc:  # noqa: BLE001
         log.warning("history_fetch_failed", error=str(exc))
         history = []
+    # dedup temporal (paridade AMC): se o agente já respondeu depois da última
+    # fala do lead, este webhook é eco/retry antigo -> ignora.
+    if is_superseded_by_outbound(history):
+        log.info("inbound_superseded_by_outbound", contact_id=data["contact_id"])
+        return
     message = aggregate_burst(history, text)
     ev = InboundEvent(
         message_id=data["message_id"],
