@@ -42,8 +42,8 @@ class Settings:
     # Timeouts (s) para evitar turno travado em silêncio. Um hang no CRM ou na
     # chamada LLM vira erro visível -> _safe_escalate, em vez de sumir.
     crm_timeout_sec: float = float(os.getenv("ADRIAN_CRM_TIMEOUT_SEC", "20"))
-    llm_timeout_sec: float = float(os.getenv("ADRIAN_LLM_TIMEOUT_SEC", "90"))
-    turn_timeout_sec: float = float(os.getenv("ADRIAN_TURN_TIMEOUT_SEC", "150"))
+    llm_timeout_sec: float = float(os.getenv("ADRIAN_LLM_TIMEOUT_SEC", "180"))
+    turn_timeout_sec: float = float(os.getenv("ADRIAN_TURN_TIMEOUT_SEC", "240"))
 
     # Burst debounce (WhatsApp): quando o lead manda várias mensagens seguidas,
     # espera esta janela (s) e processa só a ÚLTIMA — evita turnos preemptados e
