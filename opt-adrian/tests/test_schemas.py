@@ -89,10 +89,11 @@ def test_avista_skips_troca_and_entrada():
     assert m == ["cidade"]
 
 
-def test_cartao_like_avista_skips_troca_entrada():
+def test_cartao_asks_troca_entrada_parcela():
+    # cartão NÃO paga integral: ainda pergunta troca/entrada/parcelamento
     c = Collected(nome="J", veiculo_interesse="X", veiculo_interesse_confirmado=True,
-                  metodo_negociacao=MetodoNegociacao.cartao)
-    assert compute_missing(c) == ["cidade"]
+                  metodo_negociacao=MetodoNegociacao.cartao, cidade="Jlle")
+    assert compute_missing(c) == ["possui_troca", "possui_entrada", "faixa_parcela"]
 
 
 def test_cidade_always_required():

@@ -81,13 +81,21 @@ PRIORITY_FIELDS = (
 )
 
 # métodos que pagam o RESIDUAL INTEIRO -> não aprofunda troca/entrada/faixa.
-_METODO_INTEGRAL = (MetodoNegociacao.avista, MetodoNegociacao.cartao)
+# Só à vista. Cartão AINDA pergunta parcelamento + troca + entrada.
+_METODO_INTEGRAL = (MetodoNegociacao.avista,)
 # métodos que envolvem financiar/parcelar o residual -> troca/entrada REDUZEM o valor.
 _METODO_FINANCIA = (
     MetodoNegociacao.financiamento,
     MetodoNegociacao.financiamento_100,
     MetodoNegociacao.consorcio,
+    MetodoNegociacao.cartao,
     MetodoNegociacao.combinacao,
+)
+# métodos que perguntam a faixa/forma de parcelamento (faixa_parcela).
+_METODO_PARCELA = (
+    MetodoNegociacao.financiamento,
+    MetodoNegociacao.financiamento_100,
+    MetodoNegociacao.cartao,
 )
 
 
@@ -143,9 +151,8 @@ def compute_missing(c: Collected) -> list[str]:
             missing.append("possui_entrada")
         elif c.possui_entrada is True and not (c.valor_entrada or c.valor_financiado):
             missing.append("valor_entrada")
-        # faixa de parcela só p/ financiamento
-        if m in (MetodoNegociacao.financiamento, MetodoNegociacao.financiamento_100) \
-                and not c.faixa_parcela:
+        # faixa/forma de parcelamento (financiamento e cartão)
+        if m in _METODO_PARCELA and not c.faixa_parcela:
             missing.append("faixa_parcela")
 
     # 3) cidade sempre.

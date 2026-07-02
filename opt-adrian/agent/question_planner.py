@@ -79,6 +79,9 @@ def _canonical_for(state: SessionState, field: str) -> Optional[str]:
     # entrada: fraseado depende de o lead ter (ou não) veículo na troca.
     if field == "possui_entrada" and state.collected.possui_troca is True:
         return "Além do veículo na troca, você pretende dar alguma entrada na negociação?"
+    # parcela: no cartão a pergunta é sobre parcelar o valor.
+    if field == "faixa_parcela" and state.collected.metodo_negociacao == MetodoNegociacao.cartao:
+        return "Você pretende parcelar todo o valor no cartão?"
     return CANONICAL_QUESTIONS.get(field)
 
 
