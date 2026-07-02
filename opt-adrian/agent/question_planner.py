@@ -44,7 +44,7 @@ CANONICAL_QUESTIONS: dict[str, str] = {
     "nome": "Pra deixar seu atendimento certinho, como posso te chamar?",
     "veiculo_interesse": "Me conta, qual veículo você está procurando?",
     "veiculo_interesse_confirmado": "É esse mesmo que te interessou?",
-    "possui_troca": "Você tem algum veículo hoje pra entrar como troca na negociação?",
+    "possui_troca": "Você possui algum veículo para dar na troca?",
     "possui_entrada": "E de entrada, você pensa em dar algum valor?",
     "metodo_negociacao": (
         "Como fica melhor pra você fechar: financiamento, à vista ou consórcio?"
@@ -53,10 +53,10 @@ CANONICAL_QUESTIONS: dict[str, str] = {
     "valor_entrada": "Quanto você pensa em dar de entrada?",
     "consorcio_contemplado": "Sua carta de consórcio já está contemplada?",
     "cidade": "E você é aqui da região ou vem de outra cidade pra visitar a loja?",
-    "troca.modelo": "Qual o modelo do seu veículo atual?",
-    "troca.ano": "E ele é de que ano?",
-    "troca.km": "Tem ideia da quilometragem, mais ou menos?",
-    "troca.quitado": "Ele já está quitado ou ainda tem parcela?",
+    "troca.modelo": "Qual é o modelo, ano e versão do veículo?",
+    "troca.ano": "E de que ano é esse veículo?",
+    "troca.km": "Qual a quilometragem aproximada?",
+    "troca.quitado": "O veículo está quitado?",
     "agendamento": "Quer que eu já deixe uma visita reservada pra você ver de perto?",
 }
 
