@@ -39,6 +39,24 @@ def test_vehicle_set_unconfirmed_goes_foco():
     assert q.field == "veiculo_interesse_confirmado"
 
 
+def test_options_presentation_asks_algum_desses():
+    # lead pediu outros modelos -> foco de lista, não "é esse mesmo?"
+    s = _state(veiculo_interesse="Onix")
+    q = plan_next_question(s, StateUpdate(topics=["ver_outros_carros"]))
+    assert q.intent == QuestionIntent.foco
+    assert q.canonical_text == "Algum desses chamou sua atenção?"
+
+
+def test_foco_is_one_shot():
+    # foco perguntado 1x -> se não confirmar, segue pro funil (não repete)
+    s = _state(veiculo_interesse="Onix")
+    assert plan_next_question(s).field == "veiculo_interesse_confirmado"  # 1ª vez
+    s.insist_attempts["veiculo_interesse_confirmado"] = 1  # já perguntou
+    q = plan_next_question(s)
+    assert q.field != "veiculo_interesse_confirmado"  # não repete -> funil (nome)
+    assert q.field == "nome"
+
+
 def test_engaged_lead_skips_confirm():
     # lead já engajou negociação (deu nome) -> não re-pergunta "é esse mesmo?"
     q = plan_next_question(_state(nome="J", veiculo_interesse="Compass"))

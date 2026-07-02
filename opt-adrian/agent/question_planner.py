@@ -128,9 +128,24 @@ def _funnel_next(
     c = state.collected
     skipped = set(state.skipped_fields)
 
-    # 4. vehicle identified but not confirmed -> present/confirm (foco).
+    # 4-opções. Apresentação de OUTROS modelos em andamento (paridade AMC): quando
+    # o lead pediu alternativas/quer outro veículo, o foco do turno é a lista —
+    # pergunte "algum desses chamou sua atenção?" (não "é esse mesmo?").
+    if update is not None:
+        topics = set(update.topics or [])
+        if update.intent_secundario:
+            topics.add(update.intent_secundario)
+        if "ver_outros_carros" in topics or update.intent == "apresentar":
+            return NextQuestion(
+                intent=QuestionIntent.foco,
+                field=None,
+                canonical_text="Algum desses chamou sua atenção?",
+            )
+
+    # 4. vehicle identified but not confirmed -> present/confirm (foco), ONE-SHOT.
     #    Se o lead já ENGAJOU a negociação (troca/entrada/método/nome), o interesse
-    #    está implícito — não fique re-perguntando "é esse mesmo?".
+    #    está implícito. Pergunta a confirmação UMA vez: se o lead não confirmar,
+    #    segue pro funil em vez de re-perguntar "é esse mesmo?" (flag = 1 tentativa).
     ja_engajou = (
         c.nome
         or c.possui_troca is not None
@@ -138,11 +153,13 @@ def _funnel_next(
         or c.metodo_negociacao is not None
         or c.troca.modelo is not None
     )
+    foco_ja_perguntado = state.insist_attempts.get("veiculo_interesse_confirmado", 0) >= 1
     if (
         c.veiculo_interesse
         and c.veiculo_interesse_confirmado is not True
         and "veiculo_interesse_confirmado" not in skipped
         and not ja_engajou
+        and not foco_ja_perguntado
     ):
         return _make(state, "veiculo_interesse_confirmado", QuestionIntent.foco)
 

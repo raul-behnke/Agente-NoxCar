@@ -96,14 +96,8 @@ def compute_missing(c: Collected) -> list[str]:
         missing.append("nome")
     if not c.veiculo_interesse:
         missing.append("veiculo_interesse")
-    # engajou a negociação (nome/troca/entrada/método) -> interesse implícito;
-    # não exige confirmação explícita ("é esse mesmo?") repetida.
-    _engajou = (
-        c.nome or c.possui_troca is not None or c.possui_entrada is not None
-        or c.metodo_negociacao is not None or c.troca.modelo is not None
-    )
-    if c.veiculo_interesse_confirmado is not True and not _engajou:
-        missing.append("veiculo_interesse_confirmado")
+    # veiculo_interesse_confirmado NÃO é gate de completude: a confirmação é uma
+    # pergunta ONE-SHOT tratada no planner (foco). Não trava o funil nem repete.
 
     # eixo troca (gate booleano -> subfields quando True)
     if c.possui_troca is None:

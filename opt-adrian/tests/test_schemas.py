@@ -55,9 +55,10 @@ def _base_complete() -> Collected:
 # --- compute_missing / funnel_complete (Q2) -------------------------------
 
 def test_empty_collected_missing_base():
+    # veiculo_interesse_confirmado NÃO é gate (confirmação = foco one-shot no planner)
     m = compute_missing(Collected())
     assert m == [
-        "nome", "veiculo_interesse", "veiculo_interesse_confirmado",
+        "nome", "veiculo_interesse",
         "possui_troca", "possui_entrada", "metodo_negociacao", "cidade",
     ]
 
