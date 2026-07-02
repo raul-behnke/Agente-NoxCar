@@ -36,30 +36,60 @@ def _line(label: str, val) -> str:
     return f"- {label}: {val}" if val not in (None, "") else ""
 
 
+def _sim_nao(v) -> Optional[str]:
+    return "sim" if v is True else ("não" if v is False else None)
+
+
+_METODO_LABEL = {
+    "financiamento": "Financiamento",
+    "financiamento_100": "Financiamento 100%",
+    "consorcio": "Consórcio",
+    "avista": "À vista",
+    "cartao": "Cartão",
+    "troca": "Troca (integral)",
+    "combinacao": "Combinação",
+}
+
+_DESFECHO_LABEL = {
+    "qualificado_sem_agenda": "Qualificado — aguardando contato do vendedor",
+    "qualificado_agendado": "Qualificado — visita agendada",
+    "qualificado_fora_horario": "Qualificado — aguardando contato do vendedor",
+    "handoff_solicitado": "Lead pediu atendimento humano",
+    "handoff_erro": "Falha técnica — encaminhado ao vendedor",
+}
+
+
 def build_consolidated_note(
     state: SessionState, reason: str, motivo: Optional[str] = None
 ) -> str:
-    """Standardized fixed-block summary (PRD §10.3)."""
+    """Resumo padronizado que o vendedor lê — só dados reais, sem invenção."""
     c = state.collected
     t = c.troca
 
-    # 3 eixos ortogonais: Troca / Entrada / Método (funding core).
+    # Troca: sim + ficha / não / (não perguntado)
     if c.possui_troca is True:
-        troca_txt = (
-            f"sim — {t.modelo or '?'} {t.ano or ''} km {t.km or '?'}"
-            + (f" {'quitado' if t.quitado else 'com saldo'}" if t.quitado is not None else "")
-        ).strip()
-    elif c.possui_troca is False:
-        troca_txt = "não"
+        detalhe = " ".join(x for x in (t.modelo, t.ano) if x)
+        extras = []
+        if t.km:
+            extras.append(f"{t.km} km")
+        if t.quitado is not None:
+            extras.append("quitado" if t.quitado else "com saldo")
+        troca_txt = "sim" + (f" — {detalhe}" if detalhe else "")
+        if extras:
+            troca_txt += " (" + ", ".join(extras) + ")"
     else:
-        troca_txt = None  # não perguntado / parcial
+        troca_txt = _sim_nao(c.possui_troca)
 
+    # Entrada: sim + valor / não
     if c.possui_entrada is True:
-        entrada_txt = f"sim — {c.valor_entrada}" if c.valor_entrada else "sim (valor não definido)"
-    elif c.possui_entrada is False:
-        entrada_txt = "não"
+        entrada_txt = f"sim — {c.valor_entrada}" if c.valor_entrada else "sim (valor a confirmar)"
     else:
-        entrada_txt = None
+        entrada_txt = _sim_nao(c.possui_entrada)
+
+    metodo = c.metodo_negociacao.value if c.metodo_negociacao else None
+    metodo_txt = _METODO_LABEL.get(metodo, metodo)
+    # rótulo da parcela depende do método (cartão = parcelamento)
+    parcela_label = "Parcelamento" if metodo == "cartao" else "Faixa de parcela"
 
     blocks = [
         "📋 RESUMO ADRIAN — PRÉ-ATENDIMENTO",
@@ -68,18 +98,20 @@ def build_consolidated_note(
         _line("Cidade", c.cidade),
         "\n[Interesse]",
         _line("Veículo de interesse", c.veiculo_interesse),
-        _line("Confirmado", c.veiculo_interesse_confirmado),
+        _line("Confirmado", _sim_nao(c.veiculo_interesse_confirmado)),
         "\n[Negociação]",
-        _line("Método", c.metodo_negociacao.value if c.metodo_negociacao else None),
+        _line("Método", metodo_txt),
         _line("Troca", troca_txt),
         _line("Entrada", entrada_txt),
-        _line("Faixa de parcela", c.faixa_parcela),
-        _line("Consórcio contemplado", c.consorcio_contemplado),
-        "\n[Situação]",
-        _line("Interesse em agendar", c.interesse_agendamento),
-        _line("Agendamento", state.appointment.slot_iso if state.appointment.created else None),
+        _line(parcela_label, c.faixa_parcela),
+        _line("Consórcio contemplado", _sim_nao(c.consorcio_contemplado)),
+    ]
+    # Situação só aparece se houver agendamento (booking lead-iniciado).
+    if state.appointment.created and state.appointment.slot_iso:
+        blocks += ["\n[Situação]", _line("Agendamento", state.appointment.slot_iso)]
+    blocks += [
         "\n[Próximo passo]",
-        _line("Desfecho", reason),
-        _line("Motivo", motivo),
+        _line("Desfecho", _DESFECHO_LABEL.get(reason, reason)),
+        _line("Observação", motivo),
     ]
     return "\n".join(b for b in blocks if b)
