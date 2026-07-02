@@ -39,50 +39,76 @@ def _db():
     init_db()
 
 
-def _base_complete() -> Collected:
-    # modelo ortogonal: gates de troca/entrada resolvidos (False) + cidade + método.
+def _base_avista() -> Collected:
+    # à vista paga o residual inteiro -> sem troca/entrada. Completo com cidade.
     return Collected(
         nome="João",
         veiculo_interesse="Compass 2021",
         veiculo_interesse_confirmado=True,
-        possui_troca=False,
-        possui_entrada=False,
         metodo_negociacao=MetodoNegociacao.avista,
         cidade="Joinville",
     )
 
 
-# --- compute_missing / funnel_complete (Q2) -------------------------------
+def _base_financ() -> Collected:
+    # financiamento: troca/entrada resolvidos (False) + faixa + cidade.
+    return Collected(
+        nome="João",
+        veiculo_interesse="Compass 2021",
+        veiculo_interesse_confirmado=True,
+        metodo_negociacao=MetodoNegociacao.financiamento,
+        possui_troca=False,
+        possui_entrada=False,
+        faixa_parcela="até 1500",
+        cidade="Joinville",
+    )
+
+
+# --- compute_missing / funnel_complete (método-first) ---------------------
 
 def test_empty_collected_missing_base():
-    # veiculo_interesse_confirmado NÃO é gate (confirmação = foco one-shot no planner)
+    # método é o 1º eixo; troca/entrada só depois de saber o método
     m = compute_missing(Collected())
-    assert m == [
-        "nome", "veiculo_interesse",
-        "possui_troca", "possui_entrada", "metodo_negociacao", "cidade",
-    ]
+    assert m == ["nome", "veiculo_interesse", "metodo_negociacao", "cidade"]
 
 
-def test_gates_before_method_no_early_return():
-    # sem early-return em metodo None: gates e cidade ainda aparecem
+def test_method_first_before_troca_entrada():
     c = Collected(nome="J", veiculo_interesse="X", veiculo_interesse_confirmado=True)
-    assert compute_missing(c) == [
-        "possui_troca", "possui_entrada", "metodo_negociacao", "cidade",
-    ]
+    assert compute_missing(c) == ["metodo_negociacao", "cidade"]
 
 
-def test_avista_complete_with_base_only():
-    assert funnel_complete(_base_complete()) is True
+def test_avista_complete_no_troca_entrada():
+    assert funnel_complete(_base_avista()) is True
+
+
+def test_avista_skips_troca_and_entrada():
+    c = Collected(nome="J", veiculo_interesse="X", veiculo_interesse_confirmado=True,
+                  metodo_negociacao=MetodoNegociacao.avista)
+    m = compute_missing(c)
+    assert "possui_troca" not in m and "possui_entrada" not in m
+    assert m == ["cidade"]
+
+
+def test_cartao_like_avista_skips_troca_entrada():
+    c = Collected(nome="J", veiculo_interesse="X", veiculo_interesse_confirmado=True,
+                  metodo_negociacao=MetodoNegociacao.cartao)
+    assert compute_missing(c) == ["cidade"]
 
 
 def test_cidade_always_required():
-    c = _base_complete()
+    c = _base_avista()
     c.cidade = None
     assert compute_missing(c) == ["cidade"]
 
 
+def test_financiamento_asks_troca_entrada_faixa_order():
+    c = Collected(nome="J", veiculo_interesse="X", veiculo_interesse_confirmado=True,
+                  metodo_negociacao=MetodoNegociacao.financiamento, cidade="Jlle")
+    assert compute_missing(c) == ["possui_troca", "possui_entrada", "faixa_parcela"]
+
+
 def test_possui_entrada_true_requires_valor():
-    c = _base_complete()
+    c = _base_financ()
     c.possui_entrada = True
     assert compute_missing(c) == ["valor_entrada"]
     c.valor_entrada = "20000"
@@ -90,58 +116,47 @@ def test_possui_entrada_true_requires_valor():
 
 
 def test_possui_entrada_false_skips_valor():
-    c = _base_complete()
+    c = _base_financ()
     c.possui_entrada = False
     assert "valor_entrada" not in compute_missing(c)
 
 
 def test_financiamento_requires_faixa_parcela():
-    c = _base_complete()
-    c.metodo_negociacao = MetodoNegociacao.financiamento
+    c = _base_financ()
+    c.faixa_parcela = None
     assert compute_missing(c) == ["faixa_parcela"]
-    c.faixa_parcela = "até 1500"
-    assert funnel_complete(c) is True
 
 
 def test_financiamento_100_requires_faixa_parcela():
-    c = _base_complete()
+    c = _base_financ()
     c.metodo_negociacao = MetodoNegociacao.financiamento_100
+    c.faixa_parcela = None
     assert compute_missing(c) == ["faixa_parcela"]
 
 
 def test_avista_no_faixa_parcela():
-    c = _base_complete()
-    c.metodo_negociacao = MetodoNegociacao.avista
-    assert "faixa_parcela" not in compute_missing(c)
+    assert "faixa_parcela" not in compute_missing(_base_avista())
 
 
 def test_troca_requires_modelo_ano_km_only():
-    c = _base_complete()
+    c = _base_financ()
     c.possui_troca = True
     assert compute_missing(c) == ["troca"]
-    # quitado opcional, restante removido do gate
     c.troca = TrocaInfo(modelo="HB20", ano="2018", km="50000")
     assert funnel_complete(c) is True
 
 
-def test_troca_gated_by_possui_troca_not_method():
-    c = _base_complete()
-    c.metodo_negociacao = MetodoNegociacao.financiamento
-    c.faixa_parcela = "até 1500"
-    c.possui_troca = True
-    assert compute_missing(c) == ["troca"]
-
-
 def test_consorcio_requires_contemplado():
-    c = _base_complete()
+    c = _base_financ()
     c.metodo_negociacao = MetodoNegociacao.consorcio
+    c.faixa_parcela = None  # consórcio não usa faixa
     assert compute_missing(c) == ["consorcio_contemplado"]
     c.consorcio_contemplado = False  # tri-state: False is valid
     assert funnel_complete(c) is True
 
 
 def test_interesse_agendamento_not_a_gate():
-    c = _base_complete()
+    c = _base_avista()
     c.interesse_agendamento = None
     assert funnel_complete(c) is True  # None agendamento doesn't block completion
 

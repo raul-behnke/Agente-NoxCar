@@ -32,7 +32,9 @@ Extraia, quando presentes de forma clara, os campos do funil:
   — a confirmação é uma pergunta que o agente faz. Se o lead NEGA/quer outro
   ("não é esse", "queria um SUV", "tem outro?") => confirmado=false e topics
   inclui "ver_outros_carros".
-- metodo_negociacao: troca | financiamento | consorcio | avista | financiamento_100 | combinacao
+- metodo_negociacao: troca | financiamento | consorcio | avista | cartao | financiamento_100 | combinacao
+  ("no cartão"/"pago no cartão" => cartao; "pago tudo à vista"/"dinheiro" => avista.
+  à vista e cartão pagam o valor inteiro — não precisam de troca nem entrada.)
 - possui_troca (true/false conforme o lead disser; null se não disse)
 - troca: modelo, ano, km, quitado (true/false), restante (valor aproximado)
 - valor_entrada: valor que o lead dá de ENTRADA / sinal em dinheiro à vista.
@@ -80,7 +82,8 @@ INTENÇÕES IMPLÍCITAS (leia nas entrelinhas — um bom pré-atendente infere, 
   (é só uma pergunta de política; não infira que ele tem um carro).
 - "vocês financiam?" / "dá pra financiar?" / "faço no financiamento" => metodo_negociacao=financiamento.
 - "aceitam consórcio?" citando carta/consórcio próprio => metodo_negociacao=consorcio.
-- "consigo pagar à vista" / "pago tudo à vista" => metodo_negociacao=avista.
+- "consigo pagar à vista" / "pago tudo à vista" / "dinheiro" => metodo_negociacao=avista.
+- "pago no cartão" / "parcelo no cartão" => metodo_negociacao=cartao.
 
 Regras de extração:
 - Amarre a interpretação à ÚLTIMA pergunta feita ao lead (use o estado atual).

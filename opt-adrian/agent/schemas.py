@@ -19,6 +19,7 @@ class MetodoNegociacao(str, Enum):
     financiamento = "financiamento"
     consorcio = "consorcio"
     avista = "avista"
+    cartao = "cartao"                    # paga o residual no cartão (= integral)
     financiamento_100 = "financiamento_100"
     combinacao = "combinacao"
 
@@ -68,65 +69,88 @@ PRIORITY_FIELDS = (
     "nome",
     "veiculo_interesse",
     "veiculo_interesse_confirmado",
+    "metodo_negociacao",       # eixo PRINCIPAL — perguntado 1º (após confirmar veículo)
+    "consorcio_contemplado",
     "possui_troca",
     "troca",
     "possui_entrada",
     "valor_entrada",
-    "metodo_negociacao",
     "faixa_parcela",
-    "consorcio_contemplado",
     "cidade",
     "interesse_agendamento",
 )
 
+# métodos que pagam o RESIDUAL INTEIRO -> não aprofunda troca/entrada/faixa.
+_METODO_INTEGRAL = (MetodoNegociacao.avista, MetodoNegociacao.cartao)
+# métodos que envolvem financiar/parcelar o residual -> troca/entrada REDUZEM o valor.
+_METODO_FINANCIA = (
+    MetodoNegociacao.financiamento,
+    MetodoNegociacao.financiamento_100,
+    MetodoNegociacao.consorcio,
+    MetodoNegociacao.combinacao,
+)
+
 
 def _troca_relevant(c: Collected) -> bool:
-    # eixo troca é dirigido só pelo gate `possui_troca` (ortogonal ao método).
-    return c.possui_troca is True
+    # troca só é aprofundada quando o método envolve financiar/parcelar o residual
+    # (ou o método é a própria troca integral). À vista/cartão não pergunta troca.
+    return c.possui_troca is True and (
+        c.metodo_negociacao in _METODO_FINANCIA
+        or c.metodo_negociacao == MetodoNegociacao.troca
+    )
 
 
 def compute_missing(c: Collected) -> list[str]:
-    """Ordered list of fields still needed to COMPLETE the funnel (Q2).
+    """Campos ainda necessários para COMPLETAR o funil, na ordem de pergunta.
 
-    Recomputed live from `collected` (never trust an LLM-provided `missing`).
-    `possui_troca` and `interesse_agendamento` are NOT completion gates.
+    Eixo PRINCIPAL = método. Troca e entrada são REDUTORES do valor: só
+    perguntados quando o método envolve financiar/parcelar. À vista / cartão
+    pagam o residual inteiro -> pulam troca/entrada/faixa.
+    Recalculado sempre do `collected` (nunca confia no `missing` do LLM).
     """
     missing: list[str] = []
     if not c.nome:
         missing.append("nome")
     if not c.veiculo_interesse:
         missing.append("veiculo_interesse")
-    # veiculo_interesse_confirmado NÃO é gate de completude: a confirmação é uma
-    # pergunta ONE-SHOT tratada no planner (foco). Não trava o funil nem repete.
 
-    # eixo troca (gate booleano -> subfields quando True)
-    if c.possui_troca is None:
-        missing.append("possui_troca")
-    elif _troca_relevant(c) and not c.troca.is_complete():
-        missing.append("troca")
-
-    # eixo entrada (gate booleano -> valor quando True)
-    if c.possui_entrada is None:
-        missing.append("possui_entrada")
-    elif c.possui_entrada is True and not (c.valor_entrada or c.valor_financiado):
-        # either a down payment OR a financed amount satisfies the money question
-        missing.append("valor_entrada")
-
-    # método de negociação (funding core)
+    # 1) MÉTODO primeiro. Sem ele, não dá pra saber se troca/entrada importam.
     m = c.metodo_negociacao
     if m is None:
         missing.append("metodo_negociacao")
-    elif m in (MetodoNegociacao.financiamento, MetodoNegociacao.financiamento_100):
-        if not c.faixa_parcela:
-            missing.append("faixa_parcela")
-    elif m == MetodoNegociacao.consorcio and c.consorcio_contemplado is None:
-        missing.append("consorcio_contemplado")
-    # avista / troca / combinacao -> sem sub-fields de método
+        if not c.cidade:
+            missing.append("cidade")
+        return missing
 
-    # cidade sempre exigida (dentro e fora do horário)
+    # 2) à vista / cartão -> paga integral, sem troca/entrada/faixa.
+    if m in _METODO_INTEGRAL:
+        pass
+    elif m == MetodoNegociacao.troca:
+        # troca integral: paga com o veículo -> só os dados da troca.
+        if not c.troca.is_complete():
+            missing.append("troca")
+    else:
+        # financiamento / financiamento_100 / consórcio / combinacao
+        if m == MetodoNegociacao.consorcio and c.consorcio_contemplado is None:
+            missing.append("consorcio_contemplado")
+        # troca (reduz o valor)
+        if c.possui_troca is None:
+            missing.append("possui_troca")
+        elif c.possui_troca is True and not c.troca.is_complete():
+            missing.append("troca")
+        # entrada (reduz o valor)
+        if c.possui_entrada is None:
+            missing.append("possui_entrada")
+        elif c.possui_entrada is True and not (c.valor_entrada or c.valor_financiado):
+            missing.append("valor_entrada")
+        # faixa de parcela só p/ financiamento
+        if m in (MetodoNegociacao.financiamento, MetodoNegociacao.financiamento_100) \
+                and not c.faixa_parcela:
+            missing.append("faixa_parcela")
+
+    # 3) cidade sempre.
     if not c.cidade:
         missing.append("cidade")
-
     return missing
 
 

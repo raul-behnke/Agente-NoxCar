@@ -17,9 +17,11 @@ from typing import Optional
 from pydantic import BaseModel
 
 from agent.schemas import (
+    _METODO_INTEGRAL,
     MetodoNegociacao,
     SessionState,
     StateUpdate,
+    _troca_relevant,
     compute_missing,
 )
 from config.settings import settings
@@ -47,7 +49,7 @@ CANONICAL_QUESTIONS: dict[str, str] = {
     "possui_troca": "Você possui algum veículo para dar na troca?",
     "possui_entrada": "Você pretende dar alguma entrada na negociação?",
     "metodo_negociacao": (
-        "Como fica melhor pra você fechar: financiamento, à vista ou consórcio?"
+        "Como você pretende fazer a negociação? Financiamento, consórcio, à vista ou no cartão?"
     ),
     "faixa_parcela": "Pra eu já te direcionar certo, qual faixa de parcela cabe no seu mês?",
     "valor_entrada": "Qual valor aproximadamente?",
@@ -179,13 +181,20 @@ def _funnel_next(
         troca_tocada = uc.possui_troca is True or any(
             getattr(uc.troca, s) is not None for s in _TROCA_SUBFIELDS
         )
-        if troca_tocada and c.possui_troca is True and not c.troca.is_complete():
+        # só segue o thread de troca quando o método a torna relevante (financia/
+        # parcela). À vista/cartão não aprofunda troca.
+        if troca_tocada and _troca_relevant(c) and not c.troca.is_complete():
             sub = _next_troca_subfield(c.troca, skipped)
             if sub is not None:
                 return _make(state, sub, QuestionIntent.funil)
         entrada_tocada = uc.possui_entrada is True or bool(uc.valor_entrada)
+        metodo_financia = (
+            c.metodo_negociacao is not None and c.metodo_negociacao not in _METODO_INTEGRAL
+            and c.metodo_negociacao != MetodoNegociacao.troca
+        )
         if (
             entrada_tocada
+            and metodo_financia
             and c.possui_entrada is True
             and not (c.valor_entrada or c.valor_financiado)
             and "valor_entrada" not in skipped

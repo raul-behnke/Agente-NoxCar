@@ -63,27 +63,28 @@ def test_engaged_lead_skips_confirm():
     assert q.field != "veiculo_interesse_confirmado"
 
 
-def test_confirmed_asks_possui_troca():
-    # nova ordem: após confirmar veículo, primeiro gate é troca (não método)
+def test_confirmed_asks_metodo():
+    # nova ordem: após confirmar veículo, o 1º eixo é o MÉTODO
     q = plan_next_question(
         _state(nome="J", veiculo_interesse="Compass", veiculo_interesse_confirmado=True)
     )
-    assert q.field == "possui_troca"
+    assert q.field == "metodo_negociacao"
 
 
 def _confirmed(**extra) -> SessionState:
+    # confirmado + método financiamento (p/ troca/entrada serem relevantes)
     base = dict(
         nome="J", veiculo_interesse="Compass", veiculo_interesse_confirmado=True,
+        metodo_negociacao=MetodoNegociacao.financiamento,
     )
     base.update(extra)
     return _state(**base)
 
 
 def _complete(**extra) -> SessionState:
-    # funil completo (modelo ortogonal): gates resolvidos + método + cidade.
+    # funil completo: à vista (paga integral) + cidade.
     base = dict(
         nome="J", veiculo_interesse="Compass", veiculo_interesse_confirmado=True,
-        possui_troca=False, possui_entrada=False,
         metodo_negociacao=MetodoNegociacao.avista, cidade="Joinville",
     )
     base.update(extra)
@@ -110,18 +111,13 @@ def test_possui_entrada_true_asks_valor():
 
 
 def test_financiamento_asks_faixa_parcela():
-    s = _confirmed(
-        possui_troca=False, possui_entrada=False,
-        metodo_negociacao=MetodoNegociacao.financiamento,
-    )
+    s = _confirmed(possui_troca=False, possui_entrada=False)
     assert plan_next_question(s).field == "faixa_parcela"
 
 
-def test_cidade_asked_before_scheduling():
-    s = _confirmed(
-        possui_troca=False, possui_entrada=False,
-        metodo_negociacao=MetodoNegociacao.avista,
-    )
+def test_avista_skips_to_cidade():
+    # à vista -> pula troca/entrada -> cidade
+    s = _confirmed(metodo_negociacao=MetodoNegociacao.avista)
     assert plan_next_question(s).field == "cidade"
 
 
@@ -134,9 +130,9 @@ def test_funnel_complete_offers_scheduling():
 
 def test_follow_troca_thread_over_nome():
     # lead ainda sem nome, mas ESTE turno revelou troca -> segue troca (modelo),
-    # não volta pra pergunta do nome
+    # não volta pra pergunta do nome (método financia -> troca relevante)
     s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True,
-               possui_troca=True)
+               metodo_negociacao=MetodoNegociacao.financiamento, possui_troca=True)
     s.collected.troca.ano = "2001"
     upd = StateUpdate(collected=Collected(possui_troca=True, troca=TrocaInfo(ano="2001")))
     q = plan_next_question(s, upd)
@@ -145,7 +141,7 @@ def test_follow_troca_thread_over_nome():
 
 def test_follow_entrada_thread():
     s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True,
-               possui_entrada=True)
+               metodo_negociacao=MetodoNegociacao.financiamento, possui_entrada=True)
     upd = StateUpdate(collected=Collected(possui_entrada=True))
     q = plan_next_question(s, upd)
     assert q.field == "valor_entrada"
@@ -154,7 +150,7 @@ def test_follow_entrada_thread():
 def test_no_thread_signal_keeps_normal_order():
     # sem sinal de troca no update, ordem normal (nome primeiro)
     s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True,
-               possui_troca=True)
+               metodo_negociacao=MetodoNegociacao.financiamento, possui_troca=True)
     q = plan_next_question(s, StateUpdate())
     assert q.field == "nome"
 
@@ -210,7 +206,7 @@ def test_planner_skips_given_up_field():
     s = _state(veiculo_interesse="Onix", veiculo_interesse_confirmado=True)
     s.skipped_fields = ["nome"]
     q = plan_next_question(s)
-    assert q.field == "possui_troca"  # skipped nome, advanced to first gate
+    assert q.field == "metodo_negociacao"  # skipped nome, advanced to método (1º eixo)
 
 
 def test_planner_skips_exhausted_troca_subfield():
