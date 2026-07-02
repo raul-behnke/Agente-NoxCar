@@ -181,6 +181,14 @@ def build_voice_payload(
         # veículo EM FOCO (ficha completa do último mostrado) — verdade p/ atributos
         "veiculo_em_foco": _ficha(veiculo_em_foco) if veiculo_em_foco else None,
         "acknowledge_hint": _acknowledge_hint(state, last_message),
+        # o lead ACABOU de confirmar o veículo e vamos começar a qualificação ->
+        # a voice faz a ponte calorosa antes da 1ª pergunta do funil.
+        "iniciar_qualificacao": (
+            state.collected.veiculo_interesse_confirmado is True
+            and not state.collected.nome
+            and getattr(next_question, "intent", None)
+            and next_question.intent.value == "funil"
+        ),
         "horario_funcionamento": _format_business_hours(),
         "contrato_duvida": (
             "Se a mensagem do lead contém uma PERGUNTA (ex.: horário de atendimento, "
