@@ -53,10 +53,14 @@ def detect_inventory_signal(
     ) or (c.possui_troca is True and not c.troca.is_complete())
     if collecting_troca:
         return False
-    # explicit vehicle/spec keyword in this message (attribute/options/photos)
-    msg = (last_message or "").lower()
-    if any(kw in msg for kw in _VEHICLE_KEYWORDS):
-        return True
+    # keyword match de veículo SÓ vale antes de mostrar qualquer veículo. Depois
+    # que já houve apresentação, palavras genéricas ('carro', 'veículo', 'km') numa
+    # resposta de funil ('é meu primeiro carro') NÃO devem re-exibir a ficha —
+    # re-apresentação exige sinal explícito (intent/topics ver_outros/pedido_foto).
+    if not state.vehicles_shown:
+        msg = (last_message or "").lower()
+        if any(kw in msg for kw in _VEHICLE_KEYWORDS):
+            return True
     return False
 
 
