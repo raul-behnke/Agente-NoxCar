@@ -40,6 +40,19 @@ class TurnResult:
     shown_external_ids: list[str] = field(default_factory=list)
 
 
+_PHOTO_WORDS = ("foto", "fotos", "imagem", "imagens", "fotinha")
+
+
+def _lead_pediu_foto(update, last_message: str) -> bool:
+    """Lead pediu foto? (intent/topics pedido_foto ou palavra 'foto' na mensagem)"""
+    if update is not None:
+        if getattr(update, "intent", None) == "pedido_foto" or \
+                getattr(update, "intent_secundario", None) == "pedido_foto" or \
+                "pedido_foto" in (getattr(update, "topics", None) or []):
+            return True
+    return bool(last_message) and any(w in last_message.lower() for w in _PHOTO_WORDS)
+
+
 def _recent_history(history: Optional[list[dict]], limit: int = 6) -> str:
     """Compact last turns so the EstoqueExpert sees refusals ('nenhum me agradou')."""
     if not history:
@@ -141,11 +154,26 @@ async def run_team_turn(
     # a multi-option list before the lead picks one).
     photos = []
     fotos_indisponiveis = False
-    if should_send_photos(decision, update, last_message):
-        # o veículo tem fotos REAIS cadastradas suficientes? (só capa/1 imagem = não)
+    # o lead quer fotos? (pedido explícito OU card único apresentado)
+    quer_fotos = should_send_photos(decision, update, last_message) or (
+        _lead_pediu_foto(update, last_message)
+    )
+    if quer_fotos:
+        # alvo: ids válidos do EstoqueExpert; se vierem vazios/errados, cai pro
+        # veículo EM FOCO (last_card / último mostrado). Evita "sem fotos" por
+        # id hallucinado quando o carro em foco TEM fotos.
+        foto_ids = [
+            e for e in (decision.enviar_fotos_de if decision else [])
+            if build_photo_payload_by_id(e, inv)
+        ]
+        if not foto_ids:
+            foco_id = state.last_card_external_id or (
+                state.vehicles_shown[-1] if state.vehicles_shown else None
+            )
+            if foco_id and build_photo_payload_by_id(str(foco_id), inv):
+                foto_ids = [str(foco_id)]
         disponiveis = max(
-            (len(build_photo_payload_by_id(eid, inv)) for eid in decision.enviar_fotos_de),
-            default=0,
+            (len(build_photo_payload_by_id(eid, inv)) for eid in foto_ids), default=0
         )
         if disponiveis < settings.min_photos_to_send:
             fotos_indisponiveis = True  # não envia; consultor manda depois
@@ -156,7 +184,7 @@ async def run_team_turn(
                 else settings.photos_per_vehicle_list
             )
             photos = resolve_photos(
-                decision.enviar_fotos_de, inv, per_vehicle=per, total=settings.photos_total_max
+                foto_ids, inv, per_vehicle=per, total=settings.photos_total_max
             )
 
     # veículo EM FOCO (paridade AMC): ficha completa do último veículo mostrado,
