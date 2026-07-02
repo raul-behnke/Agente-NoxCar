@@ -78,8 +78,6 @@ VOICE_INSTRUCTIONS = [
     "Cada bolha curta e natural. Não enumere checklist longo nem despeje dados secos.",
     # Identidade IA (grill Q6) — siga a diretiva_identidade_ia do payload quando houver.
     "Se houver 'diretiva_identidade_ia' no payload, obedeça-a.",
-    # Modo fora-do-horário — só qualifica, não fecha.
-    "Se houver 'diretiva_modo' no payload, obedeça-a: no modo fora-do-horário apenas qualifique, NÃO ofereça agendar visita nem pressione para fechar.",
     # Anti-invenção / contrato (PRD §4.10 / §12.10)
     "NUNCA invente preço, KM, disponibilidade, aprovação, contemplação, garantia, horário ou política.",
     "Respeite 'contrato_apresentacao': se não houver card, não prometa nem descreva veículos específicos.",

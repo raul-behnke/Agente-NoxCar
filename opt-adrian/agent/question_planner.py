@@ -86,7 +86,6 @@ def _make(state: SessionState, field: str, intent: QuestionIntent) -> NextQuesti
 def plan_next_question(
     state: SessionState,
     update: Optional[StateUpdate] = None,
-    after_hours: bool = False,
 ) -> NextQuestion:
     c = state.collected
 
@@ -108,7 +107,7 @@ def plan_next_question(
     #    pergunta do funil como pergunta_alvo. Um pré-atendente responde e segue.
     #    Detecta dúvida por intent OU por topics (multi-intenção, paridade AMC):
     #    assim uma pergunta embutida numa resposta de funil não é ignorada.
-    base = _funnel_next(state, update, after_hours)
+    base = _funnel_next(state, update)
     is_duvida = bool(update) and (
         update.intent == "duvida" or "duvida_operacional" in (update.topics or [])
     )
@@ -123,7 +122,7 @@ def plan_next_question(
 
 
 def _funnel_next(
-    state: SessionState, update: Optional[StateUpdate], after_hours: bool
+    state: SessionState, update: Optional[StateUpdate]
 ) -> NextQuestion:
     """A próxima ação do FUNIL (sem tratar dúvida/agendamento-explícito)."""
     c = state.collected
@@ -180,7 +179,7 @@ def _funnel_next(
         return _make(state, field, QuestionIntent.funil)
 
     # 6. funnel complete -> OFFER scheduling once (desfecho Q4).
-    if not after_hours and c.interesse_agendamento is None:
+    if c.interesse_agendamento is None:
         return NextQuestion(
             intent=QuestionIntent.agendamento,
             canonical_text=CANONICAL_QUESTIONS["agendamento"],

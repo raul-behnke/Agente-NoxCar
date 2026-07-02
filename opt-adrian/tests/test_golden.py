@@ -62,12 +62,10 @@ def _harness(monkeypatch, update, turn=None):
     monkeypatch.setattr(orch, "crm", crm)
     monkeypatch.setattr(orch, "_extract", lambda h, s, m: update)
 
-    async def fake_gen(state, nq, upd, msg, history=None, after_hours=False):
+    async def fake_gen(state, nq, upd, msg, history=None):
         return turn or SimpleNamespace(bubbles=["resposta"], shown_external_ids=[], photos=[])
 
     monkeypatch.setattr(orch, "_generate", fake_gen)
-    # pin clock: golden scenarios assert in-hours behavior deterministically
-    monkeypatch.setattr(orch, "is_after_hours", lambda *a, **k: False)
     return crm
 
 
@@ -152,6 +150,12 @@ def test_human_request_midfunnel_escalates(monkeypatch):
 # --- Cenário: foto enviada antes das bolhas -------------------------------
 
 def test_photos_sent_before_bubbles(monkeypatch):
+    # saudação já feita -> sem vídeo de estrutura neste turno; foca na ordem foto->bolha
+    from agent.schemas import SessionState
+    from db.sessions import save
+    s = SessionState(contact_id="c1")
+    s.saudacao_feita = True
+    save(s)
     upd = StateUpdate(collected=Collected(veiculo_interesse="Compass"))
     turn = SimpleNamespace(
         bubbles=["Olha esse!"], shown_external_ids=["1"], photos=["http://x.jpg"]

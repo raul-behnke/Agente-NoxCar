@@ -60,7 +60,6 @@ async def run_team_turn(
     last_message: str,
     inventory: Optional[list[dict]] = None,
     history: Optional[list[dict]] = None,
-    after_hours: bool = False,
 ) -> TurnResult:
     inv = inventory if inventory is not None else load_inventory()
     by_id = {str(v.get("external_id")): v for v in inv}
@@ -161,7 +160,6 @@ async def run_team_turn(
         photos=photos,
         veiculo_destaque=veiculo_destaque,
         veiculos_opcoes=veiculos_opcoes,
-        after_hours=after_hours,
         veiculo_em_foco=veiculo_em_foco,
     )
     result = await voice.arun(input=payload)

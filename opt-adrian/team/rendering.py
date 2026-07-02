@@ -17,8 +17,6 @@ from agent.templates import render_vehicle_card, render_vehicle_list
 from config.settings import settings
 from team.schemas import BubbleSequence, InventoryAction, InventoryDecision
 
-_WEEKDAYS_PT = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
-
 
 def _acknowledge_hint(state: SessionState, last_message: str) -> Optional[dict]:
     """Dica determinística do que reconhecer com naturalidade (paridade AMC).
@@ -36,13 +34,9 @@ def _acknowledge_hint(state: SessionState, last_message: str) -> Optional[dict]:
 
 
 def _format_business_hours() -> str:
-    """Horário de funcionamento legível (a partir de settings.business_hours),
-    para a voice responder 'até que horas atendem?' sem inventar."""
-    parts = []
-    for i, dia in enumerate(_WEEKDAYS_PT):
-        janela = settings.business_hours.get(i)
-        parts.append(f"{dia}: fechado" if janela is None else f"{dia}: {janela[0]}–{janela[1]}")
-    return "; ".join(parts)
+    """Horário de atendimento (informativo, p/ a voice responder 'até que horas
+    atendem?' sem inventar). Apenas informação — NÃO controla modo do agente."""
+    return "segunda a sexta: 08:00–18:30; sábado: 09:00–13:00; domingo: fechado"
 
 
 def _vehicles_from_decision(decision: InventoryDecision, inventory: list[dict]) -> list[dict]:
@@ -105,7 +99,6 @@ def build_voice_payload(
     photos: Optional[list[str]] = None,
     veiculo_destaque: Optional[dict] = None,
     veiculos_opcoes: Optional[list[dict]] = None,
-    after_hours: bool = False,
     veiculo_em_foco: Optional[dict] = None,
 ) -> str:
     fotos_serao_enviadas = bool(photos)
@@ -155,25 +148,13 @@ def build_voice_payload(
             "NÃO pergunte o nome de novo se já perguntou. Continue a conversa do ponto atual."
             if state.saudacao_feita
             else (
-                "Primeiro contato FORA DO HORÁRIO comercial. Abra com ESTE roteiro "
-                "(pode adaptar palavras, mas mantenha o sentido e a ORDEM):\n"
-                "1) 'Olá, que bom ter recebido o seu contato!'\n"
-                "2) 'No momento nosso time de vendas está fora do horário de atendimento, "
-                "mas posso adiantar algumas informações e deixar tudo organizado para que "
-                "um vendedor fale com você logo pela manhã.'\n"
-                "3) 'Segue um vídeo mostrando como é a estrutura da nossa loja e o nosso "
-                "jeito de trabalhar 👇' (o vídeo JÁ está sendo enviado — não descreva, só anuncie).\n"
-                "4) Confirme o veículo: 'Vi que você se interessou no {veículo}, é isso?'\n"
-                "NÃO diga 'Aqui é o Adrian'; NÃO peça o nome ainda; NÃO ofereça agendar."
-                if after_hours
-                else "Primeiro contato: apresente-se UMA vez ('Olá! Aqui é o Adrian da NOXCAR')."
+                "Primeiro contato. Abra assim (adapte as palavras, mantenha o sentido):\n"
+                "1) 'Olá! Aqui é o Adrian, da NOXCAR. Tudo bem? 😊'\n"
+                "2) Anuncie o vídeo da estrutura: 'Já te mando um vídeo mostrando a estrutura "
+                "da nossa loja e o nosso jeito de trabalhar 👇' (o vídeo JÁ está sendo enviado — "
+                "não descreva, só anuncie).\n"
+                "3) Termine com a 'pergunta_alvo' (reconhecer/confirmar o veículo ou pedir o nome)."
             )
-        ),
-        "diretiva_modo": (
-            "MODO FORA-DO-HORÁRIO: apenas QUALIFIQUE. NÃO ofereça agendar visita, NÃO pressione "
-            "para fechar. Colete os dados com leveza; um consultor dá sequência no horário comercial."
-            if after_hours
-            else None
         ),
         "veiculo_para_apresentar": destaque,  # SINGLE closest match (prose, no bullets)
         "veiculos_opcoes": opcoes,  # only when lead asked for options (prose, max 3)

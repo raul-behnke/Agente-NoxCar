@@ -76,13 +76,11 @@ def _ev(message_id="m1", tags=("agente-ia",), message="oi"):
     )
 
 
-def _patch(monkeypatch, crm, update=None, turn=None, after_hours=False):
+def _patch(monkeypatch, crm, update=None, turn=None):
     monkeypatch.setattr(orch, "crm", crm)
     monkeypatch.setattr(orch, "_extract", lambda h, s, m: update or StateUpdate())
-    # pin the clock so tests are deterministic regardless of wall-time
-    monkeypatch.setattr(orch, "is_after_hours", lambda *a, **k: after_hours)
 
-    async def fake_gen(state, nq, upd, msg, history=None, after_hours=False):
+    async def fake_gen(state, nq, upd, msg, history=None):
         return turn or SimpleNamespace(bubbles=["Olá!"], shown_external_ids=[], photos=[])
 
     monkeypatch.setattr(orch, "_generate", fake_gen)
@@ -90,11 +88,6 @@ def _patch(monkeypatch, crm, update=None, turn=None, after_hours=False):
 
 def _run(ev):
     return asyncio.run(orch.run_turn(ev))
-
-
-def _force_hours(monkeypatch, after_hours: bool):
-    """Pin the after-hours clock regardless of when the suite runs."""
-    monkeypatch.setattr(orch, "is_after_hours", lambda *a, **k: after_hours)
 
 
 # --- gates ----------------------------------------------------------------
@@ -211,37 +204,16 @@ def test_complete_funnel_declined_scheduling_escalates(monkeypatch):
     assert load_or_new("c1").terminal_reason == TerminalReason.qualificado_sem_agenda.value
 
 
-# --- after-hours mode -----------------------------------------------------
+# --- saudação (vídeo sempre) ---------------------------------------------
 
-def test_after_hours_complete_funnel_escalates_fora_horario(monkeypatch):
-    s = SessionState(contact_id="c1")
-    s.collected = _complete_collected()  # interesse_agendamento None (não ofertado)
-    save(s)
+def test_greeting_sends_video_once(monkeypatch):
     crm = FakeCrm()
-    _patch(monkeypatch, crm, after_hours=True)
-    r = _run(_ev(message_id="z"))
-    assert r.action == "escalated"
-    assert crm.workflow_adds == 1
-    assert load_or_new("c1").terminal_reason == TerminalReason.qualificado_fora_horario.value
-
-
-def test_after_hours_greeting_sends_video_once(monkeypatch):
-    crm = FakeCrm()
-    _patch(monkeypatch, crm, after_hours=True)
+    _patch(monkeypatch, crm)
     _run(_ev(message_id="a"))
-    assert len(crm.attachments) == 1  # vídeo enviado 1x na saudação
+    assert len(crm.attachments) == 1  # vídeo da estrutura enviado 1x na saudação
     # segunda mensagem (já saudou) não reenvia o vídeo
     _run(_ev(message_id="b"))
     assert len(crm.attachments) == 1
-
-
-def test_after_hours_lead_slot_still_books(monkeypatch):
-    # decisão confirmada: lead com horário explícito agenda mesmo fora-do-horário
-    crm = FakeCrm()
-    _patch(monkeypatch, crm, update=StateUpdate(chosen_slot_iso="2026-06-12T10:00"), after_hours=True)
-    r = _run(_ev())
-    assert r.action == "booked"
-    assert crm.appointments == ["2026-06-12T10:00"]
 
 
 def test_two_attempts_exhaustion_skips_not_escalates(monkeypatch):

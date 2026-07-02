@@ -20,7 +20,6 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from agent.hours import is_after_hours
 from agent.merge import merge_into_state
 from agent.question_planner import QuestionIntent, plan_next_question
 from agent.schemas import (
@@ -80,12 +79,10 @@ def _extract(history: list[dict], state: SessionState, last_message: str) -> Sta
     )
 
 
-async def _generate(state, next_question, update, last_message, history=None, after_hours=False):
+async def _generate(state, next_question, update, last_message, history=None):
     from team.runner import run_team_turn  # lazy: pulls Agno only at runtime
 
-    return await run_team_turn(
-        state, next_question, update, last_message, history=history, after_hours=after_hours
-    )
+    return await run_team_turn(state, next_question, update, last_message, history=history)
 
 
 # --- helpers --------------------------------------------------------------
@@ -244,9 +241,6 @@ async def run_turn(ev: InboundEvent) -> Result:
     if state.terminal_reason:
         return Result("ignored", f"sessão encerrada ({state.terminal_reason})")
 
-    # after-hours mode: computed ONCE per turn from the clock (re-avaliado a cada
-    # mensagem). Fora-do-horário o agente só qualifica e encerra em handoff.
-    after_hours = is_after_hours()
     if is_new:
         record_event(
             "CONVERSATION_STARTED", ev.contact_id, ev.conversation_id,
@@ -349,8 +343,8 @@ async def run_turn(ev: InboundEvent) -> Result:
         QUALIFICADOS_TOTAL.labels(TerminalReason.qualificado_agendado.value).inc()
         return Result("booked", update.chosen_slot_iso)
 
-    # 12. plan the next question (fora-do-horário suprime a OFERTA de agendamento)
-    nq = plan_next_question(state, update, after_hours=after_hours)
+    # 12. plan the next question
+    nq = plan_next_question(state, update)
 
     # 13. 2-attempt exhaustion: STOP insisting and move on (do NOT escalate — the
     # lead is engaged, just not answering this field, e.g. won't give the name).
@@ -361,16 +355,9 @@ async def run_turn(ev: InboundEvent) -> Result:
         if nq.field not in state.skipped_fields:
             state.skipped_fields.append(nq.field)
             log.info("field_skipped_after_attempts", contact_id=ev.contact_id, field=nq.field)
-        nq = plan_next_question(state, update, after_hours=after_hours)
+        nq = plan_next_question(state, update)
 
-    # 14a. fora-do-horário: funil completo -> encerra em qualificado_fora_horario
-    # (não há vendedor p/ dar sequência agora; só qualifica e faz handoff).
-    if after_hours and funnel_complete(state.collected):
-        return _escalate(
-            state, ev, TerminalReason.qualificado_fora_horario, "qualificado fora do horário"
-        )
-
-    # 14b. funnel complete but lead declined scheduling -> escalate (desfecho Q4)
+    # 14. funnel complete but lead declined scheduling -> escalate (desfecho Q4)
     if funnel_complete(state.collected) and state.collected.interesse_agendamento is False:
         return _escalate(
             state, ev, TerminalReason.qualificado_sem_agenda, "qualificado, recusou agendamento"
@@ -384,16 +371,16 @@ async def run_turn(ev: InboundEvent) -> Result:
 
     # 16. generate the turn (EstoqueExpert -> voice)
     try:
-        turn = await _generate(state, nq, update, ev.message, history=history, after_hours=after_hours)
+        turn = await _generate(state, nq, update, ev.message, history=history)
     except Exception as exc:  # noqa: BLE001
         return _safe_escalate(state, ev, f"falha na geração: {exc}")
 
-    # 16b. fora-do-horário: envia o vídeo da estrutura 1x, junto da saudação.
-    if after_hours and not state.saudacao_feita and settings.afterhours_video_url:
+    # 16b. envia o vídeo da estrutura 1x, junto da saudação (sempre no 1º contato).
+    if not state.saudacao_feita and settings.greeting_video_url:
         try:
-            crm.send_attachment(ev.contact_id, settings.afterhours_video_url)
+            crm.send_attachment(ev.contact_id, settings.greeting_video_url)
         except Exception:  # noqa: BLE001 - vídeo best-effort, não trava o turno
-            log.warning("afterhours_video_failed", contact_id=ev.contact_id)
+            log.warning("greeting_video_failed", contact_id=ev.contact_id)
 
     # update offer-tracking state
     if turn.shown_external_ids:

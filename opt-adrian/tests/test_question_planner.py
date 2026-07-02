@@ -114,23 +114,6 @@ def test_funnel_complete_offers_scheduling():
     assert q.intent == QuestionIntent.agendamento
 
 
-def test_after_hours_suppresses_scheduling_offer():
-    q = plan_next_question(_complete(), after_hours=True)
-    assert q.intent == QuestionIntent.nenhum
-
-
-def test_after_hours_still_qualifies_funnel():
-    # fora-do-horário ainda pergunta os campos do funil normalmente
-    q = plan_next_question(_confirmed(), after_hours=True)
-    assert q.field == "possui_troca"
-
-
-def test_after_hours_lead_request_still_schedules():
-    # se o lead PEDIR agendar, atendemos mesmo fora-do-horário
-    q = plan_next_question(_state(nome="J"), StateUpdate(quer_agendar=True), after_hours=True)
-    assert q.intent == QuestionIntent.agendamento
-
-
 def test_follow_troca_thread_over_nome():
     # lead ainda sem nome, mas ESTE turno revelou troca -> segue troca (modelo),
     # não volta pra pergunta do nome
