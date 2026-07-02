@@ -155,9 +155,16 @@ def build_voice_payload(
             "NÃO pergunte o nome de novo se já perguntou. Continue a conversa do ponto atual."
             if state.saudacao_feita
             else (
-                "Primeiro contato FORA DO HORÁRIO comercial: apresente-se UMA vez "
-                "('Olá! Aqui é o Adrian da NOXCAR'), avise com naturalidade que a loja está "
-                "fechada agora e que você vai adiantar o atendimento. Enviamos um vídeo da estrutura."
+                "Primeiro contato FORA DO HORÁRIO comercial. Abra com ESTE roteiro "
+                "(pode adaptar palavras, mas mantenha o sentido e a ORDEM):\n"
+                "1) 'Olá, que bom ter recebido o seu contato!'\n"
+                "2) 'No momento nosso time de vendas está fora do horário de atendimento, "
+                "mas posso adiantar algumas informações e deixar tudo organizado para que "
+                "um vendedor fale com você logo pela manhã.'\n"
+                "3) 'Segue um vídeo mostrando como é a estrutura da nossa loja e o nosso "
+                "jeito de trabalhar 👇' (o vídeo JÁ está sendo enviado — não descreva, só anuncie).\n"
+                "4) Confirme o veículo: 'Vi que você se interessou no {veículo}, é isso?'\n"
+                "NÃO diga 'Aqui é o Adrian'; NÃO peça o nome ainda; NÃO ofereça agendar."
                 if after_hours
                 else "Primeiro contato: apresente-se UMA vez ('Olá! Aqui é o Adrian da NOXCAR')."
             )
