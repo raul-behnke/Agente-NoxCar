@@ -44,6 +44,8 @@ def parse_structured(
     model: str | None = None,
     temperature: float | None = 0.0,
     component: str = "llm",
+    reasoning_effort: str | None = None,
+    max_completion_tokens: int | None = None,
 ) -> T:
     """Call the model and return a validated instance of `schema`.
 
@@ -63,8 +65,13 @@ def parse_structured(
         kwargs["temperature"] = temperature
     # reasoning models: cap reasoning effort to keep the turn fast (default medium
     # is slow). Only valid for gpt-5/o-series.
-    if _omit_temperature(model) and settings.reasoning_effort:
-        kwargs["reasoning_effort"] = settings.reasoning_effort
+    if _omit_temperature(model):
+        kwargs["reasoning_effort"] = reasoning_effort or settings.reasoning_effort
+        # backstop contra runaway de raciocínio (visto 12k+ tokens estourando o
+        # timeout e escalando por engano). Limita reasoning+saída.
+        cap = max_completion_tokens or settings.max_completion_tokens
+        if cap:
+            kwargs["max_completion_tokens"] = cap
 
     started = time.perf_counter()
     try:

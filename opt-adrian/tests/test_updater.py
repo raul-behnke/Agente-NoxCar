@@ -48,7 +48,7 @@ def test_run_updater_plumbing_mocked(monkeypatch):
 
     captured = {}
 
-    def fake_parse(messages, schema, model=None, temperature=None, component="llm"):
+    def fake_parse(messages, schema, model=None, temperature=None, component="llm", **kw):
         captured["messages"] = messages
         captured["model"] = model
         captured["temperature"] = temperature

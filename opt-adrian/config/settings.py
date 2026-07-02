@@ -21,6 +21,10 @@ class Settings:
     # "medium" na OpenAI é LENTO (~3 chamadas sequenciais/turno). "low" corta
     # bastante a latência sem perder qualidade em extração/atendimento.
     reasoning_effort: str = os.getenv("ADRIAN_REASONING_EFFORT", "low")
+    # extração (updater) não precisa raciocinar muito -> minimal (rápido, sem runaway)
+    updater_reasoning_effort: str = os.getenv("ADRIAN_UPDATER_REASONING", "minimal")
+    # backstop de tokens de completion (reasoning+saída) p/ gpt-5. Evita runaway.
+    max_completion_tokens: int = int(os.getenv("ADRIAN_MAX_COMPLETION_TOKENS", "6000"))
 
     # Persistence: CRM history is the source of truth; this DB is operational
     # support only (audit, dedup, attempt counters, escalation/booking flags).
@@ -38,7 +42,7 @@ class Settings:
     # Timeouts (s) para evitar turno travado em silêncio. Um hang no CRM ou na
     # chamada LLM vira erro visível -> _safe_escalate, em vez de sumir.
     crm_timeout_sec: float = float(os.getenv("ADRIAN_CRM_TIMEOUT_SEC", "20"))
-    llm_timeout_sec: float = float(os.getenv("ADRIAN_LLM_TIMEOUT_SEC", "60"))
+    llm_timeout_sec: float = float(os.getenv("ADRIAN_LLM_TIMEOUT_SEC", "90"))
     turn_timeout_sec: float = float(os.getenv("ADRIAN_TURN_TIMEOUT_SEC", "150"))
 
     # Burst debounce (WhatsApp): quando o lead manda várias mensagens seguidas,

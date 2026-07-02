@@ -167,5 +167,6 @@ def run_updater(
     update = parse_structured(
         messages, StateUpdate, model=model or settings.model_id,
         temperature=0.0, component="updater",
+        reasoning_effort=settings.updater_reasoning_effort,
     )
     return validate_update(update)

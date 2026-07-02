@@ -25,8 +25,19 @@ def is_activity_event(msg: dict[str, Any]) -> bool:
     return t.upper().startswith("TYPE_ACTIVITY")
 
 
+import re
+
+# GHL anexa "Received on 📱[Canal]" / marcadores de tipo ao corpo — lixo que
+# confunde a extração (e já disparou runaway de raciocínio no updater).
+_JUNK_RE = re.compile(r"\s*Received on\s*[\U0001F300-\U0001FAFF]*\s*\[[^\]]*\].*$", re.DOTALL)
+
+
+def strip_received_on(text: str | None) -> str:
+    return _JUNK_RE.sub("", (text or "")).strip()
+
+
 def _body(msg: dict[str, Any]) -> str:
-    return (msg.get("body") or msg.get("message") or "").strip()
+    return strip_received_on(msg.get("body") or msg.get("message") or "")
 
 
 def last_inbound_burst(history: list[dict]) -> list[str]:
@@ -71,7 +82,7 @@ def extract_payload(payload: dict[str, Any]) -> dict[str, Any]:
     msg = payload.get("message")
     if isinstance(msg, dict):
         msg = msg.get("body") or msg.get("message") or ""
-    text = (msg or payload.get("body") or payload.get("Mensagem Completa") or "").strip()
+    text = strip_received_on(msg or payload.get("body") or payload.get("Mensagem Completa") or "")
     msg_obj = payload.get("message") if isinstance(payload.get("message"), dict) else {}
     message_id = (
         payload.get("message_id")
