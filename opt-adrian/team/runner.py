@@ -119,6 +119,21 @@ async def run_team_turn(
     veiculo_destaque = selected[0] if selected else None
     veiculos_opcoes = selected[:3] if allow_opts else []
 
+    # anti-dupla-ficha: se o veículo em destaque JÁ foi mostrado e o lead não pediu
+    # a FICHA explicitamente (só perguntou foto/atributo), não re-apresenta a ficha.
+    # A voice ainda responde via veiculo_em_foco (atributos) e o contrato de fotos.
+    _ficha_pedida = any(
+        w in (last_message or "").lower()
+        for w in ("ficha", "detalhe", "especific", "informaç", "ficha completa")
+    )
+    if (
+        veiculo_destaque
+        and not allow_opts
+        and not _ficha_pedida
+        and str(veiculo_destaque.get("external_id")) in {str(v) for v in state.vehicles_shown}
+    ):
+        veiculo_destaque = None
+
     # 2. no bullet cards; resolve photo URLs (so the voice knows if photos exist)
     cards: list[str] = []
     shown = [s.external_id for s in decision.veiculos_selecionados] if decision else []

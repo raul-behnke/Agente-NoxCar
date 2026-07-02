@@ -43,7 +43,7 @@ class NextQuestion(BaseModel):
 
 
 CANONICAL_QUESTIONS: dict[str, str] = {
-    "nome": "Pra deixar seu atendimento certinho, como posso te chamar?",
+    "nome": "Como posso te chamar?",
     "veiculo_interesse": "Me conta, qual veículo você está procurando?",
     "veiculo_interesse_confirmado": "É esse mesmo que te interessou?",
     "possui_troca": "Você possui algum veículo para dar na troca?",
