@@ -45,12 +45,12 @@ CANONICAL_QUESTIONS: dict[str, str] = {
     "veiculo_interesse": "Me conta, qual veículo você está procurando?",
     "veiculo_interesse_confirmado": "É esse mesmo que te interessou?",
     "possui_troca": "Você possui algum veículo para dar na troca?",
-    "possui_entrada": "E de entrada, você pensa em dar algum valor?",
+    "possui_entrada": "Você pretende dar alguma entrada na negociação?",
     "metodo_negociacao": (
         "Como fica melhor pra você fechar: financiamento, à vista ou consórcio?"
     ),
     "faixa_parcela": "Pra eu já te direcionar certo, qual faixa de parcela cabe no seu mês?",
-    "valor_entrada": "Quanto você pensa em dar de entrada?",
+    "valor_entrada": "Qual valor aproximadamente?",
     "consorcio_contemplado": "Sua carta de consórcio já está contemplada?",
     "cidade": "E você é aqui da região ou vem de outra cidade pra visitar a loja?",
     "troca.modelo": "Qual é o modelo, ano e versão do veículo?",
@@ -72,13 +72,21 @@ def _next_troca_subfield(troca, skipped: set[str] | None = None) -> str | None:
     return None  # all set or remaining ones given up on
 
 
+def _canonical_for(state: SessionState, field: str) -> Optional[str]:
+    """Texto canônico do campo, com variações CONTEXTUAIS quando fizer sentido."""
+    # entrada: fraseado depende de o lead ter (ou não) veículo na troca.
+    if field == "possui_entrada" and state.collected.possui_troca is True:
+        return "Além do veículo na troca, você pretende dar alguma entrada na negociação?"
+    return CANONICAL_QUESTIONS.get(field)
+
+
 def _make(state: SessionState, field: str, intent: QuestionIntent) -> NextQuestion:
     """Build the NextQuestion for `field`, flagging exhaustion at the 2-attempt limit."""
     attempts = state.insist_attempts.get(field, 0)
     return NextQuestion(
         intent=intent,
         field=field,
-        canonical_text=CANONICAL_QUESTIONS.get(field),
+        canonical_text=_canonical_for(state, field),
         exhausted=attempts >= settings.max_insist_attempts,
     )
 
