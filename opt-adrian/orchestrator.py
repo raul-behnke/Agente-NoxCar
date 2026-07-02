@@ -303,52 +303,9 @@ async def run_turn(ev: InboundEvent) -> Result:
     # 10. merge
     state = merge_into_state(state, update)
 
-    # 11. booking: lead chose a slot (premature allowed — Q4). Validate the slot
-    # against the calendar BEFORE booking — never blind-book an LLM-parsed time
-    # ("amanhã 17h") that may not exist / be free.
-    if update.chosen_slot_iso:
-        try:
-            free = crm.get_free_slots()
-        except Exception as exc:  # noqa: BLE001 - can't verify -> integration fallback
-            return _safe_escalate(state, ev, f"falha ao ler agenda: {exc}")
-        if not free:
-            return _escalate(
-                state, ev, TerminalReason.qualificado_sem_agenda,
-                "sem horários disponíveis para agendamento automático",
-            )
-        if not _slot_matches(update.chosen_slot_iso, free):
-            bubbles = _format_slot_offer(free)
-            try:
-                _send(ev.contact_id, bubbles)
-            except Exception as exc:  # noqa: BLE001
-                return _safe_escalate(state, ev, f"falha ao enviar: {exc}")
-            state.saudacao_feita = True
-            save(state)
-            return Result("replied", "agendamento_indisponivel", bubbles=bubbles)
-        if not side_effect_done(ev.conversation_id, "booking"):
-            try:
-                crm.create_appointment(
-                    ev.contact_id, update.chosen_slot_iso, f"Visita - {state.collected.veiculo_interesse or ''}"
-                )
-            except Exception as exc:  # noqa: BLE001
-                return _safe_escalate(state, ev, f"falha ao agendar: {exc}")
-        state.appointment = Appointment(slot_iso=update.chosen_slot_iso, created=True)
-        state.terminal_reason = TerminalReason.qualificado_agendado.value
-        state.stage = "agendamento_criado"
-        _sync_opportunity(state, ev, state.terminal_reason)
-        try:
-            crm.add_note(ev.contact_id, build_consolidated_note(state, state.terminal_reason))
-            crm.send_message(ev.contact_id, "Agendamento confirmado! Te espero. 👍")
-        except Exception:  # noqa: BLE001
-            pass
-        save(state)
-        record_event("APPOINTMENT_CREATED", ev.contact_id, ev.conversation_id,
-                     {"slot_iso": update.chosen_slot_iso,
-                      "veiculo": state.collected.veiculo_interesse})
-        record_event("CONVERSATION_COMPLETED", ev.contact_id, ev.conversation_id,
-                     {"terminal_reason": state.terminal_reason})
-        QUALIFICADOS_TOTAL.labels(TerminalReason.qualificado_agendado.value).inc()
-        return Result("booked", update.chosen_slot_iso)
+    # 11. (booking removido) — o agente não agenda visitas. O vendedor cuida do
+    #     agendamento após o handoff; qualquer pedido de horário do lead é
+    #     registrado na nota e segue pro vendedor.
 
     # 12. plan the next question
     nq = plan_next_question(state, update)

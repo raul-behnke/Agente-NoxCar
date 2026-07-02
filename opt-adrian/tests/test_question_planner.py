@@ -156,11 +156,11 @@ def test_no_thread_signal_keeps_normal_order():
     assert q.field == "nome"
 
 
-def test_premature_scheduling_intent_wins():
-    # incomplete funnel but lead wants to schedule (grill Q4: allowed)
+def test_scheduling_intent_ignored_no_agendamento():
+    # agendamento removido: pedido de agendar não vira intent agendamento -> funil
     s = _state(nome="J")
     q = plan_next_question(s, StateUpdate(quer_agendar=True))
-    assert q.intent == QuestionIntent.agendamento
+    assert q.intent != QuestionIntent.agendamento
 
 
 def test_scheduling_declined_yields_nenhum():

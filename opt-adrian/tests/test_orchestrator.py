@@ -144,42 +144,17 @@ def test_financiamento_100_is_NOT_immediate_escalation(monkeypatch):
     assert _run(_ev()).action == "replied"
 
 
-# --- booking + desfecho ---------------------------------------------------
+# --- sem agendamento ------------------------------------------------------
 
-def test_chosen_slot_books(monkeypatch):
+def test_chosen_slot_does_not_book(monkeypatch):
+    # agendamento removido: mesmo com slot escolhido, não agenda -> segue funil
     crm = FakeCrm()
-    _patch(monkeypatch, crm, update=StateUpdate(chosen_slot_iso="2026-06-12T10:00"))
-    r = _run(_ev())
-    assert r.action == "booked"
-    assert crm.appointments == ["2026-06-12T10:00"]
-    from db.sessions import load_or_new
-    st = load_or_new("c1")
-    assert st.appointment.created is True
-    assert st.terminal_reason == TerminalReason.qualificado_agendado.value
-
-
-def test_unavailable_slot_reoffers_not_books(monkeypatch):
-    # lead picks a time the calendar doesn't offer -> re-offer, never blind-book
-    crm = FakeCrm()
-    crm.free_slots = ["2026-06-12T14:00", "2026-06-12T16:00"]
     _patch(monkeypatch, crm, update=StateUpdate(chosen_slot_iso="2026-06-12T10:00"))
     r = _run(_ev())
     assert r.action == "replied"
-    assert crm.appointments == []  # nothing booked
-    assert any("não está disponível" in b for b in crm.sent)
+    assert crm.appointments == []  # nada agendado
     from db.sessions import load_or_new
-    assert load_or_new("c1").terminal_reason is None  # conversation stays open
-
-
-def test_no_free_slots_escalates(monkeypatch):
-    crm = FakeCrm()
-    crm.free_slots = []
-    _patch(monkeypatch, crm, update=StateUpdate(chosen_slot_iso="2026-06-12T10:00"))
-    r = _run(_ev())
-    assert r.action == "escalated"
-    assert crm.appointments == []
-    from db.sessions import load_or_new
-    assert load_or_new("c1").terminal_reason == TerminalReason.qualificado_sem_agenda.value
+    assert load_or_new("c1").appointment.created is False
 
 
 def _complete_collected(**extra) -> Collected:

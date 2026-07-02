@@ -106,14 +106,7 @@ def plan_next_question(
     if state.terminal_reason:
         return NextQuestion(intent=QuestionIntent.nenhum)
 
-    # 2. scheduling intent (premature allowed — grill Q4): explicit wish or chosen slot.
-    #    Fora-do-horário: se o lead PEDIR agendar, ainda tratamos (booking segue ativo);
-    #    o que o modo suprime é a OFERTA proativa (passo 6), não o pedido do lead.
-    if update and (update.quer_agendar or update.chosen_slot_iso):
-        return NextQuestion(
-            intent=QuestionIntent.agendamento,
-            canonical_text=CANONICAL_QUESTIONS["agendamento"],
-        )
+    # (agendamento removido — o agente não agenda; funil completo vai pro handoff.)
 
     # 3. lead asked a question -> answer from FAQ, MAS ainda avança o funil no
     #    mesmo turno: responde a dúvida (intent=duvida) E carrega a próxima
