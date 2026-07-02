@@ -30,10 +30,14 @@ import re
 # GHL anexa "Received on 📱[Canal]" / marcadores de tipo ao corpo — lixo que
 # confunde a extração (e já disparou runaway de raciocínio no updater).
 _JUNK_RE = re.compile(r"\s*Received on\s*[\U0001F300-\U0001FAFF]*\s*\[[^\]]*\].*$", re.DOTALL)
+# marcadores de tipo do GHL: "> Voice Note <", "> Image <", "> Document <" etc.
+_MARKER_RE = re.compile(r">\s*[^<>]{1,40}?\s*<")
 
 
 def strip_received_on(text: str | None) -> str:
-    return _JUNK_RE.sub("", (text or "")).strip()
+    t = _JUNK_RE.sub("", (text or ""))
+    t = _MARKER_RE.sub(" ", t)
+    return t.strip()
 
 
 def _body(msg: dict[str, Any]) -> str:
@@ -70,13 +74,18 @@ def extract_payload(payload: dict[str, Any]) -> dict[str, Any]:
     `audio_urls` collects voice attachments for transcription.
     """
     attachments = payload.get("attachments") or []
-    audio_urls = [
-        a.get("url")
-        for a in attachments
-        if isinstance(a, dict)
-        and a.get("url")
-        and str(a.get("type", "")).lower().startswith("audio")
-    ]
+    # tolerante: attachment pode ser string (URL) ou dict; áudio detectado por
+    # type/mime "audio"/"voice" OU por extensão (.ogg/.oga/.opus/.mp3/.m4a/.wav).
+    _AUDIO_EXT = (".ogg", ".oga", ".opus", ".mp3", ".m4a", ".aac", ".wav", ".amr")
+    audio_urls = []
+    for a in attachments:
+        url = a if isinstance(a, str) else (a.get("url") if isinstance(a, dict) else None)
+        if not url:
+            continue
+        tipo = str(a.get("type", "")).lower() if isinstance(a, dict) else ""
+        u = url.lower().split("?")[0]
+        if "audio" in tipo or "voice" in tipo or u.endswith(_AUDIO_EXT):
+            audio_urls.append(url)
     contact_id = payload.get("contact_id") or payload.get("contactId")
     # GHL may send `message` as a string OR as an object {body, type, ...}.
     msg = payload.get("message")
