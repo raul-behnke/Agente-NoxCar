@@ -9,7 +9,7 @@ Per-field policy from DECISOES_GRILL_ADRIAN.md + PRD §9.6/§12.7:
 """
 from __future__ import annotations
 
-from agent.schemas import Collected, SessionState, StateUpdate, TrocaInfo
+from agent.schemas import Collected, MetodoNegociacao, SessionState, StateUpdate, TrocaInfo
 
 
 def _fill_if_empty(current, incoming):
@@ -62,6 +62,14 @@ def merge_into_state(state: SessionState, update: StateUpdate) -> SessionState:
     """Return a new SessionState with the update merged in (does not mutate input)."""
     new = state.model_copy(deep=True)
     new.collected = _merge_collected(state.collected, update.collected)
+
+    # "troca" NÃO é forma de pagamento do carro — é um REDUTOR do valor. Se o
+    # updater marcou metodo=troca (lead disse "tenho X pra troca"), normaliza:
+    # possui_troca=True e método volta a null, pra o agente perguntar como o lead
+    # paga a DIFERENÇA (financiamento / à vista / consórcio / cartão).
+    if new.collected.metodo_negociacao == MetodoNegociacao.troca:
+        new.collected.possui_troca = True
+        new.collected.metodo_negociacao = None
 
     if update.ai_identity_question:
         new.ai_identity_asked_count = state.ai_identity_asked_count + 1
