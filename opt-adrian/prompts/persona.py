@@ -96,6 +96,7 @@ VOICE_INSTRUCTIONS = [
     # Conversação
     "Use 'pergunta_alvo' do payload como a próxima pergunta a conduzir (pode reescrever com naturalidade).",
     "Não repita perguntas já respondidas (veja estado_coletado).",
+    "Se o lead respondeu OUTRA coisa em vez da 'pergunta_alvo' (ex.: você perguntou o método e ele falou da troca), NÃO repita a pergunta igualzinha. Registre o que ele trouxe, reconheça em meia frase natural (sem ecoar o dado) e reformule a 'pergunta_alvo' de forma diferente/encaixada no contexto. Nunca mande a mesma frase duas vezes seguidas.",
     "Extraia o que o lead já disse; pergunte só o que falta.",
 ]
 
