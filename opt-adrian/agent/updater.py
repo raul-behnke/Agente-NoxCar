@@ -139,10 +139,13 @@ def run_updater(
             "\n\nPERGUNTA PENDENTE (a última feita ao lead):\n"
             f"  texto: {pending_question or '(campo) ' + str(pending_field)}\n"
             f"  campo_alvo: {pending_field}\n"
-            "Se a ÚLTIMA MENSAGEM DO LEAD responde essa pergunta — MESMO curta — "
-            "preencha o campo_alvo com o valor correspondente. Afirmativa nua "
-            "('sim','isso','já está','tem') => true; negativa nua ('não','negativo') "
-            "=> false; número/horário => o valor. Não re-pergunte o que já foi dito."
+            "Se a ÚLTIMA MENSAGEM DO LEAD responde essa pergunta — MESMO curta ou "
+            "INDIRETA — preencha o campo_alvo. Afirmativa nua ('sim','isso','já "
+            "está','tem') => true; número/horário => o valor. Para GATES sim/não "
+            "(possui_troca, possui_entrada): negativa OU deflexão => false. Ex.: "
+            "'não', 'negativo', 'só dúvida mesmo', 'era só pergunta', 'não tenho', "
+            "'é meu primeiro carro', 'não é pra trocar' => campo_alvo=false. "
+            "Não re-pergunte o que já foi dito/deflexionado."
         )
     user_content = (
         f"DATA DE HOJE: {hoje} (fuso America/Sao_Paulo, -03:00)\n\n"

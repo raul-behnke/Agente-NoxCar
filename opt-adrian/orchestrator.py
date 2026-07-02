@@ -376,8 +376,10 @@ async def run_turn(ev: InboundEvent) -> Result:
             state, ev, TerminalReason.qualificado_sem_agenda, "qualificado, recusou agendamento"
         )
 
-    # 15. count this re-ask (anti-insistence)
-    if nq.intent in (QuestionIntent.funil, QuestionIntent.foco) and nq.field:
+    # 15. count this re-ask (anti-insistence). Conta SEMPRE que um campo do funil
+    # é perguntado — inclusive quando o turno é `duvida` carregando a pergunta do
+    # funil (multi-intenção). Sem isso o campo nunca esgota e repete infinito.
+    if nq.field and nq.intent in (QuestionIntent.funil, QuestionIntent.foco, QuestionIntent.duvida):
         bump_attempt(state, nq.field)
 
     # 16. generate the turn (EstoqueExpert -> voice)
